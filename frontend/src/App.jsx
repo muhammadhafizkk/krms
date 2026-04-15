@@ -1,152 +1,49 @@
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from './assets/vite.svg'
-// import heroImg from './assets/hero.png'
-// import './App.css'
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <section id="center">
-//         <div className="hero">
-//           <img src={heroImg} className="base" width="170" height="179" alt="" />
-//           <img src={reactLogo} className="framework" alt="React logo" />
-//           <img src={viteLogo} className="vite" alt="Vite logo" />
-//         </div>
-//         <div>
-//           <h1>Get started</h1>
-//           <p>
-//             Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-//           </p>
-//         </div>
-//         <button
-//           className="counter"
-//           onClick={() => setCount((count) => count + 1)}
-//         >
-//           Count is {count}
-//         </button>
-//       </section>
-
-//       <div className="ticks"></div>
-
-//       <section id="next-steps">
-//         <div id="docs">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#documentation-icon"></use>
-//           </svg>
-//           <h2>Documentation</h2>
-//           <p>Your questions, answered</p>
-//           <ul>
-//             <li>
-//               <a href="https://vite.dev/" target="_blank">
-//                 <img className="logo" src={viteLogo} alt="" />
-//                 Explore Vite
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://react.dev/" target="_blank">
-//                 <img className="button-icon" src={reactLogo} alt="" />
-//                 Learn more
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//         <div id="social">
-//           <svg className="icon" role="presentation" aria-hidden="true">
-//             <use href="/icons.svg#social-icon"></use>
-//           </svg>
-//           <h2>Connect with us</h2>
-//           <p>Join the Vite community</p>
-//           <ul>
-//             <li>
-//               <a href="https://github.com/vitejs/vite" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#github-icon"></use>
-//                 </svg>
-//                 GitHub
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://chat.vite.dev/" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#discord-icon"></use>
-//                 </svg>
-//                 Discord
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://x.com/vite_js" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#x-icon"></use>
-//                 </svg>
-//                 X.com
-//               </a>
-//             </li>
-//             <li>
-//               <a href="https://bsky.app/profile/vite.dev" target="_blank">
-//                 <svg
-//                   className="button-icon"
-//                   role="presentation"
-//                   aria-hidden="true"
-//                 >
-//                   <use href="/icons.svg#bluesky-icon"></use>
-//                 </svg>
-//                 Bluesky
-//               </a>
-//             </li>
-//           </ul>
-//         </div>
-//       </section>
-
-//       <div className="ticks"></div>
-//       <section id="spacer"></section>
-//     </>
-//   )
-// }
-
-// export default App
-
 import React, { useEffect, useState } from 'react'
+import { Route,Router,Routes } from 'react-router'
+import axios from 'axios'
+import DashboardPage from './pages/DashboardPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import PatientsPage from './pages/PatientsPage'
+import CreatePatientPage from './pages/CreatePatientPage'
+import PatientDetailPage from './pages/PatientDetailPage'
+import Navbar from './components/Navbar'
+//import toast from "react-hot-toast"
 
-function App() {
-  const [patients, setPatients] = useState([])
-  const [loading, setLoading] = useState(true)
+const App = () => {
+  const [user, setUser] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    // We use /api/patients because of our vite proxy settings
-    fetch("/api/patients")
-      .then(res => res.json())
-      .then(data => {
-        setPatients(data)
-        setLoading(false)
-      })
-      .catch(err => console.error("Error fetching:", err))
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const res = await axios.get('/api/users/me', {
+            headers: {Authorization: `Bearer ${token}`}
+          })
+          setUser(res.data)
+        } catch (error) {
+          setError("Failed to fetch user data")
+          localStorage.removeItem("token")
+        }
+      }
+    }
+    fetchUser()
   }, [])
 
+  
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Hospital Management System</h1>
-      {loading ? <p>Loading patients...</p> : (
-        <ul>
-          {patients.map(p => (
-            <li key={p.id}>{p.name} - Age: {p.age}</li>
-          ))}
-        </ul>
-      )}
+    <div data-theme="emerald" className='min-h-screen bg-linear-to-b from-white to-base-200'>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/login" element={<LoginPage setUser={setUser}/>} />
+          <Route path="/register" element={<RegisterPage setUser={setUser}/>} />
+
+          <Route path='/patients' element={<PatientsPage />} />
+          <Route path="/patients/create" element={<CreatePatientPage />} />
+          <Route path="/patients/:id" element={<PatientDetailPage />} />
+        </Routes>
     </div>
   )
 }

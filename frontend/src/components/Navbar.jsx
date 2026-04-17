@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useNavigate } from 'react-router'
-import { PlusIcon, LogOutIcon, UsersRoundIcon } from "lucide-react"
+import { PlusIcon, LogOutIcon, UsersRoundIcon, CrossIcon, LayoutDashboardIcon } from "lucide-react"
 
 const Navbar = () => {
     const navigate = useNavigate()
@@ -11,28 +11,36 @@ const Navbar = () => {
     }
 
     return (
-    <div className='navbar bg-base-200 shadow-sm justify-between'>
-        <h1 className='text-3xl font-bold text-primary font-serif tracking-tighter'>
-            Klinik Rabiah Management System
-        </h1>
-        <div className="flex-none">
-            <ul className="menu menu-horizontal px-1">
-            <li>
-                <details>
-                <summary>Parent</summary>
-                <ul className="bg-base-100 rounded-t-none p-2">
-                    <li><Link to={"/patients/create"} className='btn btn-ghost'>
+    <div className='navbar bg-primary shadow-sm justify-between'>
+        <div className='flex items-center gap-6 pl-1'>
+            <div className="flex items-center gap-2">
+            <CrossIcon className='size-6 text-base-100'/>
+            <span className='text-2xl font-bold text-base-100 font-sans tracking-tighter'>
+            KRMS
+            </span>
+            </div>
+            <div className="flex-none">
+                <ul className="menu menu-horizontal px-1">
+                <li>
+                    <Link to={"/"} className='btn btn-ghost'>
+                        <LayoutDashboardIcon className='size-5'/>
+                        <span>Dashboard</span>
+                    </Link>
+                </li>
+                <li>
+                    <Link to={"/patients"} className='btn btn-ghost'>
                         <UsersRoundIcon className='size-5'/>
                         <span>Patients</span>
-                    </Link></li>
-                    <li><button onClick={handleLogout} className='btn btn-ghost'>
+                    </Link>
+                </li>
+                <li>
+                    <button onClick={handleLogout} className='btn btn-ghost'>
                         <LogOutIcon className='size-5'/>
                         <span>Logout</span>
-                    </button></li>
+                    </button>
+                </li>
                 </ul>
-                </details>
-            </li>
-            </ul>
+            </div>
         </div>
     </div>
     )

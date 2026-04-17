@@ -2,7 +2,7 @@ import Patient from "../models/Patient.js"
 
 export async function getAllPatients(_, res){
     try {
-        const patients = await Patient.find() // Gets everything from Atlas
+        const patients = await Patient.find().limit(50).sort({ createdAt: -1 }); // Gets everything from Atlas
         res.status(200).json(patients)
 
     } catch (error) {
@@ -25,8 +25,10 @@ export async function getPatientById(req,res){
 
 export async function createPatient(req, res){
     try {
-        const {name,age,status} = req.body
-        const newPatient = new Patient({name,age,status})
+        const { fullName, NRIC, dateOfBirth, race, sex, address, contactNumber } = req.body
+        const patientData = { fullName, NRIC, dateOfBirth, race, sex, address, contactNumber }
+
+        const newPatient = new Patient(patientData)
 
         const savedPatient = await newPatient.save()
         res.status(201).json(savedPatient)
@@ -39,10 +41,13 @@ export async function createPatient(req, res){
 
 export async function updatePatient(req,res){
     try {
-        const {name,age,status} = req.body
-        const updatedPatient = await Patient.findByIdAndUpdate(req.params.id,{name,age,status},{
-            new: true,
-        })
+        const { fullName, NRIC, dateOfBirth, race, sex, address, contactNumber } = req.body
+        const patientData = { fullName, NRIC, dateOfBirth, race, sex, address, contactNumber }
+
+        const updatedPatient = await Patient.findByIdAndUpdate(req.params.id,
+            { $set: req.body },
+            { new: true, runValidators: true }
+        )
 
         if(!updatedPatient) return res.status(404).json({message: "Patient not found"})
         
@@ -59,7 +64,7 @@ export async function deletePatient(req,res){
 
         if(!deletedPatient) return res.status(404).json({message: "Patient not found"})
         
-        res.status(200).json(deletedPatient)
+        res.status(200).json({ message: "Patient deleted successfully" })
     } catch (error) {
         console.error("Error in deletePatient controller", error)
         res.status(500).json({message: "Internal server error"})

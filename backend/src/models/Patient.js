@@ -3,9 +3,13 @@ import mongoose from "mongoose"
 //1. Create schema
 const patientSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    age: { type: Number, required: true },
-    status: { type: String, default: "Stable" },
+    fullName: { type: String, required: true },
+    NRIC: { type: String, required: true, unique:true },
+    dateOfBirth: { type: Date, required: true },
+    race: { type: String, required: true },
+    sex: { type: String, enum: ["Male", "Female", "Other"], required: true },
+    address: { type: String, required: true },
+    contactNumber: { type: String, required: true },
   },
   { timestamps: true }
 );

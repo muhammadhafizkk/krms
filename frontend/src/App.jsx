@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Route,Router,Routes } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Navigate, Route,Routes } from 'react-router'
 import axios from 'axios'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
@@ -7,13 +7,13 @@ import RegisterPage from './pages/RegisterPage'
 import PatientsPage from './pages/PatientsPage'
 import CreatePatientPage from './pages/CreatePatientPage'
 import PatientDetailPage from './pages/PatientDetailPage'
+import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
-//import toast from "react-hot-toast"
 
 const App = () => {
-  const [user, setUser] = useState(null)
-  const [error, setError] = useState('')
-
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -24,25 +24,30 @@ const App = () => {
           })
           setUser(res.data)
         } catch (error) {
-          setError("Failed to fetch user data")
+          console.log("Error fetching user", error)
           localStorage.removeItem("token")
         }
       }
+      setLoading(false)
     }
     fetchUser()
   }, [])
 
+  if (loading) return <div>Loading...</div>;
   
   return (
     <div data-theme="emerald" className='min-h-screen bg-linear-to-b from-white to-base-200'>
+      <Navbar user={user} setUser={setUser} />
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/login" element={<LoginPage setUser={setUser}/>} />
-          <Route path="/register" element={<RegisterPage setUser={setUser}/>} />
-
-          <Route path='/patients' element={<PatientsPage />} />
-          <Route path="/patients/create" element={<CreatePatientPage />} />
-          <Route path="/patients/:id" element={<PatientDetailPage />} />
+          {/* Public routes */}
+          <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage setUser={setUser}/>} />
+          <Route path="/register" element={user ? <Navigate to="/" /> :<RegisterPage setUser={setUser}/>} />
+          
+          {/* Protected routes */}
+          <Route path="/" element={<ProtectedRoute user={user}><DashboardPage /></ProtectedRoute>} />
+          <Route path='/patients' element={<ProtectedRoute user={user}><PatientsPage /></ProtectedRoute>} />
+          <Route path="/patients/create" element={<ProtectedRoute user={user}><CreatePatientPage /></ProtectedRoute>} />
+          <Route path="/patients/:id" element={<ProtectedRoute user={user}><PatientDetailPage /></ProtectedRoute>} />
         </Routes>
     </div>
   )

@@ -34,6 +34,9 @@ export async function createPatient(req, res){
         res.status(201).json(savedPatient)
 
     } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "NRIC already exists" });
+        }
         console.error("Error in createPatient controller", error)
         res.status(500).json({message: "Internal server error"})
     }

@@ -9,7 +9,6 @@ const DashboardPage = () => {
         DashboardPage
       </Layout> */}
 
-      <Navbar />
       DashboardPage
     </div>
   )

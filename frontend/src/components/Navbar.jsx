@@ -2,11 +2,12 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router'
 import { PlusIcon, LogOutIcon, UsersRoundIcon, CrossIcon, LayoutDashboardIcon } from "lucide-react"
 
-const Navbar = () => {
+const Navbar = ({ user, setUser }) => {
     const navigate = useNavigate()
 
     const handleLogout = () => {
         localStorage.removeItem("token")
+        setUser(null)
         navigate("/login")
     }
 
@@ -20,7 +21,8 @@ const Navbar = () => {
             </span>
             </div>
             <div className="flex-none">
-                <ul className="menu menu-horizontal px-1">
+                {user ? (
+                    <ul className="menu menu-horizontal px-1">
                 <li>
                     <Link to={"/"} className='btn btn-ghost'>
                         <LayoutDashboardIcon className='size-5'/>
@@ -40,6 +42,9 @@ const Navbar = () => {
                     </button>
                 </li>
                 </ul>
+                ) : (
+                    <></>
+                )}
             </div>
         </div>
     </div>

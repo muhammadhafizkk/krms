@@ -4,6 +4,7 @@ import cors from "cors"
 import { connectDB } from "./config/db.js"
 import patientRoutes from "./routes/patientRoutes.js"
 import authRoutes from "./routes/authRoutes.js"
+import visitRoutes from "./routes/visitRoutes.js";
 
 dotenv.config()
 
@@ -19,6 +20,7 @@ app.use(express.json())
 //routes
 app.use("/api/users", authRoutes)
 app.use("/api/patients", patientRoutes)
+app.use("/api/visits", visitRoutes);
 
 connectDB().then(() => {
     app.listen(PORT, () => {

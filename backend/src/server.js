@@ -6,6 +6,7 @@ import patientRoutes from "./routes/patientRoutes.js"
 import authRoutes from "./routes/authRoutes.js"
 import visitRoutes from "./routes/visitRoutes.js";
 import medicalRecordRoutes from "./routes/medicalRecordRoutes.js"
+import medicationRoutes from "./routes/medicationRoutes.js"
 
 dotenv.config()
 
@@ -21,8 +22,9 @@ app.use(express.json())
 //routes
 app.use("/api/users", authRoutes)
 app.use("/api/patients", patientRoutes)
-app.use("/api/visits", visitRoutes);
+app.use("/api/visits", visitRoutes)
 app.use("/api/patients/:patientId/records", medicalRecordRoutes)
+app.use("/api/medications", medicationRoutes)
 
 connectDB().then(() => {
     app.listen(PORT, () => {

@@ -4,12 +4,18 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 import { formatDate } from "../lib/utils";
 import Detail from "../components/Detail";
+import RecordDetail from "../components/RecordDetail";
+import NewRecordModal from "../components/NewRecordModal";
+import { PlusIcon } from "lucide-react"
+import BackButton from "../components/BackButton";
 
 const PatientDetailPage = () => {
   const { id } = useParams();
   const [patient, setPatient] = useState(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
   const [records, setRecords] = useState([])
+  const [recordsLoading, setRecordsLoading] = useState(true);
+  const [selectedRecord, setSelectedRecord] = useState(null);
 
   useEffect(() => {
     const fetchPatient = async () => {
@@ -27,6 +33,37 @@ const PatientDetailPage = () => {
     fetchPatient();
   }, [id]);
 
+  useEffect(() => {
+    const fetchRecords = async () => {
+      try {
+        const res = await api.get(`/patients/${id}/records`);
+        setRecords(res.data);
+        if (res.data.length > 0) setSelectedRecord(res.data[0]);
+      } catch {
+        toast.error("Failed to load medical records");
+      } finally {
+        setRecordsLoading(false);
+      }
+    };
+    fetchRecords();
+  }, [id]);
+ 
+  const handleRecordCreated = (newRecord) => {
+    setRecords((prev) => [newRecord, ...prev]);
+    setSelectedRecord(newRecord);
+  };
+ 
+  const handleRecordUpdated = (updated) => {
+    setRecords((prev) => prev.map((r) => (r._id === updated._id ? updated : r)));
+    setSelectedRecord(updated);
+  };
+ 
+  const handleRecordDeleted = (deletedId) => {
+    const remaining = records.filter((r) => r._id !== deletedId);
+    setRecords(remaining);
+    setSelectedRecord(remaining[0] || null);
+  };
+
   if (loadingPatient) {
     return <div className="text-center py-10">Loading...</div>;
   }
@@ -36,8 +73,10 @@ const PatientDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center p-6 gap-6">
+    <div className="min-h-screen flex flex-col items-center p-6 gap-6">
       
+      <BackButton />
+
       {/* Patient Info Card */}
       <div className="card bg-base-100 shadow-xl w-full max-w-6xl">
         <div className="card-body">
@@ -96,6 +135,9 @@ const PatientDetailPage = () => {
       <div className="card bg-base-100 shadow-xl w-full max-w-6xl">
         <div className="card-body">
           <h2 className="card-title mb-4 text-2xl">Medical Records</h2>
+          {recordsLoading ? (
+            <div className="text-center py-6 opacity-50">Loading records...</div>
+          ) : (
           <div className="flex flex-col md:flex-row gap-6">
             {/* LEFT SIDE */}
             <div className="flex flex-col gap-2 md:w-1/3">
@@ -103,31 +145,67 @@ const PatientDetailPage = () => {
                 {records.length === 0 && (
                   <li className="p-4 text-sm opacity-50 text-center">No records yet</li>
                 )}
+                {records.map((rec, i) => (
+                    <li key={rec._id}>
+                      <button
+                        className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                          selectedRecord?._id === rec._id
+                            ? "bg-primary text-primary-content"
+                            : "hover:bg-base-300"
+                        }`}
+                        onClick={() => setSelectedRecord(rec)}
+                      >
+                        <span className="tabular-nums text-xs opacity-50 w-5">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <div className="flex flex-col items-start">
+                          <span className="text-sm font-medium">
+                            {formatDate(new Date(rec.createdAt))}
+                          </span>
+                          {rec.diagnosis && (
+                            <span className="text-xs opacity-60 truncate max-w-40">
+                              {rec.diagnosis}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  ))}
               </ul>
-
-              Button to create new medical record
+              <button
+                  className="btn btn-primary btn-outline w-full"
+                  onClick={() => document.getElementById("new_record_modal").showModal()}
+                >
+                  <PlusIcon className="size-4" /> New Record
+                </button>
             </div>
 
             {/* DIVIDER */}
             <div className="divider md:divider-horizontal"></div>
 
             {/* RIGHT SIDE */}
-            <div className="flex-1 grid grid-cols-2 gap-2">
-              edit button that makes all input from read only to editable. Change to save button when in editing mode
-
-              createdAt | doctor
-
-              diagnosis
-
-              notes
-
-              allergies
-
-              prescription
-            </div>
+            <div className="flex-1">
+                {selectedRecord ? (
+                  <RecordDetail
+                    key={selectedRecord._id}
+                    record={selectedRecord}
+                    patientId={id}
+                    onUpdated={handleRecordUpdated}
+                    onDeleted={handleRecordDeleted}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full opacity-40 gap-2 py-10">
+                    <p className="text-sm">No record selected</p>
+                    <p className="text-xs">Create a new record to get started</p>
+                  </div>
+                )}
+              </div>
           </div>
+          )}
         </div>
       </div>
+
+      <NewRecordModal patientId={id} onCreated={handleRecordCreated} />
     </div>
   );
 };

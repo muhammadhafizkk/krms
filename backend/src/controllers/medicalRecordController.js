@@ -10,7 +10,7 @@ export async function getRecordsByPatient(req,res){
         }
 
         const records = await MedicalRecord.find({ patient: patientId })
-            .populate("doctor", "name email")
+            .populate("doctor", "fullName email medicalLicenseNumber")
             .sort({ createdAt: -1 })
 
         res.status(200).json(records)
@@ -28,7 +28,7 @@ export async function getRecordById(req,res){
             return res.status(400).json({ message: "Invalid record ID"})
         }
 
-        const record = await MedicalRecord.findById({ _id:id, patient:patientId })
+        const record = await MedicalRecord.findOne({ _id: id, patient: patientId })
             .populate("doctor", "name email")
         
         if (!record) return res.status(404).json({ message: "Medical record not found"})
@@ -79,7 +79,7 @@ export async function updateRecord(req, res){
             { _id: id, patient: patientId },
             { $set: req.body },
             { new: true, runValidators: true }
-        )
+        ).populate("doctor", "fullName email medicalLicenseNumber")
 
         if (!updatedRecord) return res.status(404).json({ message: "Medical record not found"})
 

@@ -1,5 +1,5 @@
 import express from "express"
-import { createRecord, deleteRecord, getRecordById, getRecordsByPatient, updateRecord } from "../controllers/medicalRecordControllers.js";
+import { createRecord, deleteRecord, getRecordById, getRecordsByPatient, updateRecord } from "../controllers/medicalRecordController.js"
 
 const router = express.Router({ mergeParams: true })
 

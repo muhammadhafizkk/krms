@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route,Routes } from 'react-router'
-import axios from 'axios'
+import api from './lib/axios'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -22,9 +22,7 @@ const App = () => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const res = await axios.get('/api/users/me', {
-            headers: {Authorization: `Bearer ${token}`}
-          })
+          const res = await api.get('/users/me')
           setUser(res.data)
         } catch (error) {
           console.log("Error fetching user", error)

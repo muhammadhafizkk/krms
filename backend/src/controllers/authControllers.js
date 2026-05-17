@@ -46,6 +46,8 @@ export async function registerUser(req,res){
         res.status(201).json({
             id: user._id,
             username: user.username,
+            fullName: user.fullName,
+            role: user.role,
             email: user.email,
             token,
         })
@@ -72,6 +74,8 @@ export async function loginUser(req,res){
         res.status(200).json({
             id: user._id,
             username: user.username,
+            fullName: user.fullName,
+            role: user.role,
             email: user.email,
             token,
         })

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, useNavigate, Link } from "react-router";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
 import { formatDate } from "../lib/utils";
-import Detail from "../components/Detail";
+import PatientInfoCard from "../components/PatientInfoCard";
 import RecordDetail from "../components/RecordDetail";
 import NewRecordModal from "../components/NewRecordModal";
 import { PlusIcon } from "lucide-react"
@@ -11,12 +11,13 @@ import BackButton from "../components/BackButton";
 
 const PatientDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
-  const [records, setRecords] = useState([])
+  const [records, setRecords] = useState([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
   const [selectedRecord, setSelectedRecord] = useState(null);
-
+ 
   useEffect(() => {
     const fetchPatient = async () => {
       try {
@@ -29,10 +30,9 @@ const PatientDetailPage = () => {
         setLoadingPatient(false);
       }
     };
-
     fetchPatient();
   }, [id]);
-
+ 
   useEffect(() => {
     const fetchRecords = async () => {
       try {
@@ -48,89 +48,36 @@ const PatientDetailPage = () => {
     fetchRecords();
   }, [id]);
  
+  const handlePatientUpdated = (updated) => setPatient(updated);
+  const handlePatientDeleted = () => navigate("/patients");
+ 
   const handleRecordCreated = (newRecord) => {
     setRecords((prev) => [newRecord, ...prev]);
     setSelectedRecord(newRecord);
   };
- 
   const handleRecordUpdated = (updated) => {
     setRecords((prev) => prev.map((r) => (r._id === updated._id ? updated : r)));
     setSelectedRecord(updated);
   };
- 
   const handleRecordDeleted = (deletedId) => {
     const remaining = records.filter((r) => r._id !== deletedId);
     setRecords(remaining);
     setSelectedRecord(remaining[0] || null);
   };
-
-  if (loadingPatient) {
-    return <div className="text-center py-10">Loading...</div>;
-  }
-
-  if (!patient) {
-    return <div className="text-center py-10">Patient not found</div>;
-  }
-
+ 
+  if (loadingPatient) return <div className="text-center py-10">Loading...</div>;
+  if (!patient) return <div className="text-center py-10">Patient not found</div>;
+ 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-      
       <BackButton />
-
-      {/* Patient Info Card */}
-      <div className="card bg-base-100 shadow-xl w-full max-w-6xl">
-        <div className="card-body">
-          <h2 className="card-title mb-4 text-2xl">Patient Details</h2>
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* LEFT SIDE */}
-            <div className="flex flex-col items-center md:w-1/3 text-center">
-              {/* Avatar */}
-              <div className="avatar">
-                <div className="w-32 rounded-full bg-base-200 flex items-center justify-center text-4xl font-bold">
-                  {patient.fullName.charAt(0)}
-                </div>
-              </div>
-
-              {/* Name */}
-              <h2 className="text-xl font-semibold mt-4">{patient.fullName}</h2>
-
-              {/* Edit Button */}
-              <Link
-                to={`/patients/edit/${patient._id}`}
-                className="btn btn-primary mt-4 w-full"
-              >
-                Edit Details
-              </Link>
-            </div>
-
-            {/* DIVIDER */}
-            <div className="divider md:divider-horizontal"></div>
-
-            {/* RIGHT SIDE */}
-            <div className="flex-1 grid grid-cols-2 gap-2">
-              <Detail label="NRIC" value={patient.NRIC} />
-              <Detail
-                label="Date of Birth"
-                value={formatDate(new Date(patient.dateOfBirth))}
-              />
-              <Detail label="Race" value={patient.race} />
-              <Detail label="Sex" value={patient.sex} />
-              <Detail label="Contact Number" value={patient.contactNumber} />
-              <Detail label="Address" value={patient.address} />
-
-              <Detail
-                label="Created At"
-                value={formatDate(new Date(patient.createdAt))}
-              />
-              <Detail
-                label="Last Updated"
-                value={formatDate(new Date(patient.updatedAt))}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
+ 
+      <PatientInfoCard
+        patient={patient}
+        onUpdated={handlePatientUpdated}
+        onDeleted={handlePatientDeleted}
+      />
+ 
       {/* Medical Records Card */}
       <div className="card bg-base-100 shadow-xl w-full max-w-6xl">
         <div className="card-body">
@@ -138,14 +85,16 @@ const PatientDetailPage = () => {
           {recordsLoading ? (
             <div className="text-center py-6 opacity-50">Loading records...</div>
           ) : (
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* LEFT SIDE */}
-            <div className="flex flex-col gap-2 md:w-1/3">
-              <ul className="menu bg-base-200 rounded-box w-full p-1 gap-1">
-                {records.length === 0 && (
-                  <li className="p-4 text-sm opacity-50 text-center">No records yet</li>
-                )}
-                {records.map((rec, i) => (
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* LEFT — record list */}
+              <div className="flex flex-col gap-2 md:w-1/3">
+                <ul className="menu bg-base-200 rounded-box w-full p-1 gap-1">
+                  {records.length === 0 && (
+                    <li className="p-4 text-sm opacity-50 text-center">
+                      No records yet
+                    </li>
+                  )}
+                  {records.map((rec, i) => (
                     <li key={rec._id}>
                       <button
                         className={`flex items-center gap-3 w-full text-left px-3 py-2 rounded-lg transition-colors ${
@@ -171,20 +120,21 @@ const PatientDetailPage = () => {
                       </button>
                     </li>
                   ))}
-              </ul>
-              <button
+                </ul>
+                <button
                   className="btn btn-primary btn-outline w-full"
-                  onClick={() => document.getElementById("new_record_modal").showModal()}
+                  onClick={() =>
+                    document.getElementById("new_record_modal").showModal()
+                  }
                 >
                   <PlusIcon className="size-4" /> New Record
                 </button>
-            </div>
-
-            {/* DIVIDER */}
-            <div className="divider md:divider-horizontal"></div>
-
-            {/* RIGHT SIDE */}
-            <div className="flex-1">
+              </div>
+ 
+              <div className="divider md:divider-horizontal" />
+ 
+              {/* RIGHT — record detail */}
+              <div className="flex-1">
                 {selectedRecord ? (
                   <RecordDetail
                     key={selectedRecord._id}
@@ -200,14 +150,14 @@ const PatientDetailPage = () => {
                   </div>
                 )}
               </div>
-          </div>
+            </div>
           )}
         </div>
       </div>
-
+ 
       <NewRecordModal patientId={id} onCreated={handleRecordCreated} />
     </div>
   );
 };
-
+ 
 export default PatientDetailPage;

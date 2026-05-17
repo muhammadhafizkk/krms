@@ -41,18 +41,39 @@ const Navbar = ({ user, setUser }) => {
                         <span>Medications</span>
                     </Link>
                 </li>
-                <li>
-                    <button onClick={handleLogout} className='btn btn-ghost'>
-                        <LogOutIcon className='size-5'/>
-                        <span>Logout</span>
-                    </button>
-                </li>
                 </ul>
                 ) : (
                     <></>
                 )}
             </div>
         </div>
+
+        {/* Right side — user profile + logout */}
+        {user && (
+            <div className='flex items-center gap-4 pr-4'>
+                <div className='flex flex-col items-end'>
+                    <span className='text-sm font-semibold text-base-100'>
+                        {user.fullName}
+                    </span>
+                    <span className='text-xs opacity-80 text-base-100 uppercase tracking-wide'>
+                        {user.role}
+                    </span>
+                </div>
+                <div className='avatar placeholder'>
+                    <div className='bg-secondary text-secondary-content rounded-full w-10 flex items-center justify-center'>
+                        <span className='text-lg font-bold'>
+                            {user.fullName?.charAt(0).toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+                <button 
+                    onClick={handleLogout} 
+                    className='btn btn-sm btn-ghost text-base-100 hover:bg-primary-focus'
+                >
+                    <LogOutIcon className='size-5'/>
+                </button>
+            </div>
+        )}
     </div>
     )
 }

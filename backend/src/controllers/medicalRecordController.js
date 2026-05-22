@@ -1,87 +1,116 @@
 import MedicalRecord from "../models/MedicalRecord.js"
+import Prescription from "../models/Prescription.js"
 import mongoose from "mongoose"
 
-export async function getRecordsByPatient(req,res){
+export async function getRecordsByPatient(req, res) {
     try {
         const { patientId } = req.params
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)){
-            return res.status(400).json({ message: "Invalid patient ID"})
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            return res.status(400).json({ message: "Invalid patient ID" })
         }
 
         const records = await MedicalRecord.find({ patient: patientId })
             .populate("doctor", "fullName email medicalLicenseNumber")
+            .populate({
+                path: "prescription",
+                populate: {
+                    path: "items.medication",
+                    select: "medicationName dosage unit dispensingCategory"
+                }
+            })
             .sort({ createdAt: -1 })
 
         res.status(200).json(records)
     } catch (error) {
         console.error("Error in getRecordsByPatient controller", error)
-        res.status(500).json({ message: "Internal server error"})
+        res.status(500).json({ message: "Internal server error" })
     }
 }
 
-export async function getRecordById(req,res){
+export async function getRecordById(req, res) {
     try {
         const { patientId, id } = req.params
-        
-        if (!mongoose.Types.ObjectId.isValid(id)){
-            return res.status(400).json({ message: "Invalid record ID"})
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid record ID" })
         }
 
         const record = await MedicalRecord.findOne({ _id: id, patient: patientId })
-            .populate("doctor", "name email")
-        
-        if (!record) return res.status(404).json({ message: "Medical record not found"})
+            .populate("doctor", "fullName email medicalLicenseNumber")
+            .populate({
+                path: "prescription",
+                populate: {
+                    path: "items.medication",
+                    select: "medicationName dosage unit dispensingCategory"
+                }
+            })
+
+        if (!record) return res.status(404).json({ message: "Medical record not found" })
 
         res.status(200).json(record)
     } catch (error) {
         console.error("Error in getRecordById controller", error)
-        res.status(500).json({ message: "Internal server error"})
+        res.status(500).json({ message: "Internal server error" })
     }
 }
 
-export async function createRecord(req,res){
+export async function createRecord(req, res) {
     try {
         const { patientId } = req.params
 
-        if (!mongoose.Types.ObjectId.isValid(patientId)){
-            return res.status(400).json({ message: "Invalid patient ID"})
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            return res.status(400).json({ message: "Invalid patient ID" })
         }
 
-        const { doctor, diagnosis, prescription, allergies, notes } = req.body
+        // prescription is excluded — it is created separately via /api/prescriptions
+        const { doctor, diagnosis, allergies, notes } = req.body
 
         const newRecord = new MedicalRecord({
             patient: patientId,
             doctor,
             diagnosis,
-            prescription,
             allergies,
-            notes
+            notes,
         })
 
         const savedRecord = await newRecord.save()
-        res.status(201).json(savedRecord)
+
+        const populated = await savedRecord.populate("doctor", "fullName email medicalLicenseNumber")
+
+        res.status(201).json(populated)
     } catch (error) {
         console.error("Error in createRecord controller", error)
-        res.status(500).json({ message:"Internal server error"})
+        res.status(500).json({ message: "Internal server error" })
     }
 }
 
-export async function updateRecord(req, res){
+export async function updateRecord(req, res) {
     try {
         const { patientId, id } = req.params
 
-        if (!mongoose.Types.ObjectId.isValid(id)){
-            return res.status(400).json({ message: "Invalid record ID"})
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid record ID" })
         }
+
+        // Strip prescription from body — it is managed via /api/prescriptions
+        const { prescription: _ignored, ...safeBody } = req.body
 
         const updatedRecord = await MedicalRecord.findOneAndUpdate(
             { _id: id, patient: patientId },
-            { $set: req.body },
+            { $set: safeBody },
             { new: true, runValidators: true }
-        ).populate("doctor", "fullName email medicalLicenseNumber")
+        )
+            .populate("doctor", "fullName email medicalLicenseNumber")
+            .populate({
+                path: "prescription",
+                populate: {
+                    path: "items.medication",
+                    select: "medicationName dosage unit dispensingCategory"
+                }
+            })
 
-        if (!updatedRecord) return res.status(404).json({ message: "Medical record not found"})
+        if (!updatedRecord) return res.status(404).json({ message: "Medical record not found" })
 
         res.status(200).json(updatedRecord)
     } catch (error) {
@@ -90,21 +119,27 @@ export async function updateRecord(req, res){
     }
 }
 
-export async function deleteRecord(req, res){
+export async function deleteRecord(req, res) {
     try {
         const { patientId, id } = req.params
 
-        if(!mongoose.Types.ObjectId.isValid(id)){
-            return res.status(400).json({message: "Invalid record ID"})
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid record ID" })
         }
 
-        const deletedRecord = await MedicalRecord.findOneAndDelete(
-            {_id:id, patient:patientId}
-        )
+        const record = await MedicalRecord.findOne({ _id: id, patient: patientId })
+        if (!record) return res.status(404).json({ message: "Medical record not found" })
 
-        if (!deletedRecord) return res.status(404).json({message: "Medical record not found"})
+        // Also delete the linked prescription if one exists
+        if (record.prescription) {
+            const prescription = await Prescription.findById(record.prescription)
+            if (prescription && !prescription.dispensed) {
+                await prescription.deleteOne()
+            }
+        }
 
-        res.status(200).json({message: "Medical record deleted succcessfully"})
+        await record.deleteOne()
+        res.status(200).json({ message: "Medical record deleted successfully" })
     } catch (error) {
         console.error("Error in deleteRecord controller", error)
         res.status(500).json({ message: "Internal server error" })

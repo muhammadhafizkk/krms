@@ -54,6 +54,7 @@ const MedicationDetailPage = () => {
         unit: medication.unit || "",
         price: medication.price ?? "",
         dosage: medication.dosage || "",
+        dispensingCategory: medication.dispensingCategory || "",
       });
     }
   }, [medication]);
@@ -94,6 +95,7 @@ const MedicationDetailPage = () => {
       unit: medication.unit || "",
       price: medication.price ?? "",
       dosage: medication.dosage || "",
+      dispensingCategory: medication.dispensingCategory || "",
     });
     setEditing(false);
   };
@@ -132,6 +134,11 @@ const MedicationDetailPage = () => {
               <h2 className="card-title text-2xl">
                 {editing ? form.medicationName || "Medication Details" : medication.medicationName}
               </h2>
+              {!editing && (
+                <span className={`badge badge-outline ${medication.dispensingCategory === "OTC" ? "badge-success" : "badge-warning"}`}>
+                  {medication.dispensingCategory}
+                </span>
+              )}
               {isExpired && !editing && (
                 <span className="badge badge-error badge-outline">Expired</span>
               )}
@@ -317,6 +324,22 @@ const MedicationDetailPage = () => {
                 />
               </div>
 
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-1 block">
+                  Dispensing Category
+                </label>
+                <select
+                  name="dispensingCategory"
+                  className="select select-bordered w-full"
+                  value={form.dispensingCategory}
+                  onChange={handleChange}
+                >
+                  <option value="">— Select category —</option>
+                  <option value="OTC">OTC (Over the Counter)</option>
+                  <option value="Prescription">Prescription Only</option>
+                </select>
+              </div>
+
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
@@ -335,6 +358,7 @@ const MedicationDetailPage = () => {
               <Detail label="Quantity" value={`${medication.quantity} ${medication.unit}`} />
               <Detail label="Dosage" value={medication.dosage} />
               <Detail label="Price" value={`$${medication.price.toFixed(2)}`} />
+              <Detail label="Dispensing Category" value={medication.dispensingCategory === "OTC" ? "OTC (Over the Counter)" : "Prescription Only"} />
               <Detail
                 label="Last Updated"
                 value={formatDate(new Date(medication.updatedAt))}

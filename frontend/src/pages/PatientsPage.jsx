@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
-import Navbar from "../components/Navbar";
 import PatientsNotFound from "../components/PatientsNotFound";
 import { ChevronRightIcon, SearchIcon } from "lucide-react";
 import { Link } from "react-router";

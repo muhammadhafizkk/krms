@@ -54,6 +54,12 @@ const medicationSchema = new mongoose.Schema(
     dosage: {
       type: String,
       required: true
+    },
+
+    dispensingCategory: {
+      type: String,
+      enum: ["OTC", "Prescription"],
+      required: true
     }
   },
   { timestamps: true }

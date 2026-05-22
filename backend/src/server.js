@@ -7,6 +7,8 @@ import authRoutes from "./routes/authRoutes.js"
 import visitRoutes from "./routes/visitRoutes.js";
 import medicalRecordRoutes from "./routes/medicalRecordRoutes.js"
 import medicationRoutes from "./routes/medicationRoutes.js"
+import prescriptionRoutes from "./routes/prescriptionRoutes.js"
+import walkInSaleRoutes from "./routes/walkInSaleRoutes.js"
 
 dotenv.config()
 
@@ -25,6 +27,8 @@ app.use("/api/patients", patientRoutes)
 app.use("/api/visits", visitRoutes)
 app.use("/api/patients/:patientId/records", medicalRecordRoutes)
 app.use("/api/medications", medicationRoutes)
+app.use("/api/prescriptions", prescriptionRoutes)
+app.use("/api/walkin-sales", walkInSaleRoutes)
 
 connectDB().then(() => {
     app.listen(PORT, () => {

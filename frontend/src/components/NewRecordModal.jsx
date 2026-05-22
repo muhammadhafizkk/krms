@@ -8,7 +8,6 @@ const EMPTY_FORM = {
   diagnosis: "",
   notes: "",
   allergies: [],
-  prescription: [],
 };
 
 const NewRecordModal = ({ patientId, onCreated }) => {
@@ -17,7 +16,6 @@ const NewRecordModal = ({ patientId, onCreated }) => {
   const [saving, setSaving] = useState(false);
   const [doctors, setDoctors] = useState([]);
 
-  // Fetch doctors once on mount
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -35,39 +33,31 @@ const NewRecordModal = ({ patientId, onCreated }) => {
     setAllergyInput("");
   };
 
-  // Single onChange handler for flat fields (doctor, diagnosis, notes)
   const handleChange = (field, value) => {
     setForm((f) => ({ ...f, [field]: value }));
   };
 
-  // Allergy handlers
   const handleAddAllergy = () => {
     const val = allergyInput.trim();
     if (!val) return;
     setForm((f) => ({ ...f, allergies: [...f.allergies, val] }));
     setAllergyInput("");
   };
-  const handleRemoveAllergy = (i) =>
-    setForm((f) => ({ ...f, allergies: f.allergies.filter((_, idx) => idx !== i) }));
 
-  // Prescription handlers
-  const handleAddPrescription = () =>
+  const handleRemoveAllergy = (i) =>
     setForm((f) => ({
       ...f,
-      prescription: [...f.prescription, { medication: "", dosage: "", instructions: "" }],
+      allergies: f.allergies.filter((_, idx) => idx !== i),
     }));
-  const handleUpdatePrescription = (i, key, val) =>
-    setForm((f) => {
-      const updated = [...f.prescription];
-      updated[i] = { ...updated[i], [key]: val };
-      return { ...f, prescription: updated };
-    });
-  const handleRemovePrescription = (i) =>
-    setForm((f) => ({ ...f, prescription: f.prescription.filter((_, idx) => idx !== i) }));
 
   const handleSubmit = async () => {
+    if (!form.doctor) {
+      toast.error("Please assign a doctor");
+      return;
+    }
     setSaving(true);
     try {
+      // Step 1: create the medical record (no prescription yet)
       const res = await api.post(`/patients/${patientId}/records`, form);
       toast.success("Medical record created");
       onCreated(res.data);
@@ -85,6 +75,9 @@ const NewRecordModal = ({ patientId, onCreated }) => {
     <dialog id="new_record_modal" className="modal">
       <div className="modal-box max-w-2xl w-full">
         <h3 className="font-bold text-lg mb-4">New Medical Record</h3>
+        <p className="text-sm opacity-60 mb-4">
+          Prescription medications can be added after the record is created.
+        </p>
 
         <MedicalRecordFields
           form={form}
@@ -94,9 +87,6 @@ const NewRecordModal = ({ patientId, onCreated }) => {
           onAllergyInputChange={setAllergyInput}
           onAddAllergy={handleAddAllergy}
           onRemoveAllergy={handleRemoveAllergy}
-          onAddPrescription={handleAddPrescription}
-          onUpdatePrescription={handleUpdatePrescription}
-          onRemovePrescription={handleRemovePrescription}
         />
 
         <div className="modal-action">
@@ -109,8 +99,14 @@ const NewRecordModal = ({ patientId, onCreated }) => {
           >
             Cancel
           </button>
-          <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
-            {saving ? <span className="loading loading-spinner loading-xs" /> : null}
+          <button
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={saving}
+          >
+            {saving ? (
+              <span className="loading loading-spinner loading-xs" />
+            ) : null}
             Create Record
           </button>
         </div>

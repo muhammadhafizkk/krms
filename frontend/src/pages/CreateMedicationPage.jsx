@@ -15,6 +15,7 @@ const CreateMedicationPage = () => {
     price: "",
     supplier: "",
     dosage: "",
+    dispensingCategory: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,8 @@ const CreateMedicationPage = () => {
       !formData.unit ||
       !formData.price ||
       !formData.supplier ||
-      !formData.dosage
+      !formData.dosage ||
+      !formData.dispensingCategory
     ) {
       toast.error("All fields are required");
       return;
@@ -238,6 +240,24 @@ const CreateMedicationPage = () => {
                   value={formData.dosage}
                   onChange={handleChange}
                 />
+              </div>
+
+              <div className="form-control w-full">
+                <label className="label">
+                  <span className="label-text">
+                    Dispensing Category
+                  </span>
+                </label>
+                <select
+                  name="dispensingCategory"
+                  className="select select-bordered w-full"
+                  value={formData.dispensingCategory}
+                  onChange={handleChange}
+                >
+                  <option value="">— Select category —</option>
+                  <option value="OTC">OTC (Over the Counter)</option>
+                  <option value="Prescription">Prescription Only</option>
+                </select>
               </div>
             </div>
 

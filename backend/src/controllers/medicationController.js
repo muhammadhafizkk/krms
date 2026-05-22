@@ -7,7 +7,6 @@ export async function getAllMedications(_, res) {
             .sort({ createdAt: -1 })
 
         res.status(200).json(medications)
-
     } catch (error) {
         console.error("Error in getAllMedications controller", error)
         res.status(500).json({ message: "Internal server error" })
@@ -23,7 +22,6 @@ export async function getMedicationById(req, res) {
         }
 
         res.status(200).json(medication)
-
     } catch (error) {
         console.error("Error in getMedicationById controller", error)
         res.status(500).json({ message: "Internal server error" })
@@ -42,10 +40,11 @@ export async function createMedication(req, res) {
             unit,
             price,
             supplier,
-            dosage
+            dosage,
+            dispensingCategory,
         } = req.body
 
-        const medicationData = {
+        const newMedication = new Medication({
             medicationName,
             batchNumber,
             manufacturer,
@@ -55,23 +54,16 @@ export async function createMedication(req, res) {
             unit,
             price,
             supplier,
-            dosage
-        }
-
-        const newMedication = new Medication(medicationData)
+            dosage,
+            dispensingCategory,
+        })
 
         const savedMedication = await newMedication.save()
-
         res.status(201).json(savedMedication)
-
     } catch (error) {
-
         if (error.code === 11000) {
-            return res.status(400).json({
-                message: "Batch number already exists"
-            })
+            return res.status(400).json({ message: "Batch number already exists" })
         }
-
         console.error("Error in createMedication controller", error)
         res.status(500).json({ message: "Internal server error" })
     }
@@ -89,37 +81,39 @@ export async function updateMedication(req, res) {
             unit,
             price,
             supplier,
-            dosage
+            dosage,
+            dispensingCategory,
         } = req.body
-
-        const medicationData = {
-            medicationName,
-            batchNumber,
-            manufacturer,
-            productionDate,
-            expiryDate,
-            quantity,
-            unit,
-            price,
-            supplier,
-            dosage
-        }
 
         const updatedMedication = await Medication.findByIdAndUpdate(
             req.params.id,
-            { $set: medicationData },
+            {
+                $set: {
+                    medicationName,
+                    batchNumber,
+                    manufacturer,
+                    productionDate,
+                    expiryDate,
+                    quantity,
+                    unit,
+                    price,
+                    supplier,
+                    dosage,
+                    dispensingCategory,
+                }
+            },
             { new: true, runValidators: true }
         )
 
         if (!updatedMedication) {
-            return res.status(404).json({
-                message: "Medication not found"
-            })
+            return res.status(404).json({ message: "Medication not found" })
         }
 
         res.status(200).json(updatedMedication)
-
     } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Batch number already exists" })
+        }
         console.error("Error in updateMedication controller", error)
         res.status(500).json({ message: "Internal server error" })
     }
@@ -130,15 +124,10 @@ export async function deleteMedication(req, res) {
         const deletedMedication = await Medication.findByIdAndDelete(req.params.id)
 
         if (!deletedMedication) {
-            return res.status(404).json({
-                message: "Medication not found"
-            })
+            return res.status(404).json({ message: "Medication not found" })
         }
 
-        res.status(200).json({
-            message: "Medication deleted successfully"
-        })
-
+        res.status(200).json({ message: "Medication deleted successfully" })
     } catch (error) {
         console.error("Error in deleteMedication controller", error)
         res.status(500).json({ message: "Internal server error" })

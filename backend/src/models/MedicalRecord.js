@@ -6,13 +6,11 @@ const medicalRecordSchema = new mongoose.Schema(
     doctor: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, },
 
     diagnosis: { type: String, trim: true, },
-    prescription: [
-      {
-        medication: { type: String, required: true, trim: true },
-        dosage: { type: String, required: true },
-        instructions: { type: String },
-      },
-    ],
+    prescription: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Prescription",
+      default: null,
+    },
     allergies: [
       {
         type: String,

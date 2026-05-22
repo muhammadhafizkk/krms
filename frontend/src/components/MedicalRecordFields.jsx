@@ -1,24 +1,20 @@
-import { PlusIcon, XIcon } from "lucide-react";
-import PrescriptionInput from "./PrescriptionInput";
+import { XIcon } from "lucide-react";
 
 /**
  * MedicalRecordFields
- * 
- * Pure fields component — no API calls, no modal, no edit/read toggle.
- * Receives form state + handlers from parent.
- * Used by both NewRecordModal (create) and RecordDetail (edit).
+ *
+ * Pure fields component for creating/editing a MedicalRecord.
+ * Prescription is NOT included here — it is managed separately
+ * via the PrescriptionPanel in RecordDetail after the record exists.
  *
  * Props:
- *   form          — { doctor, diagnosis, notes, allergies, prescription }
- *   onChange      — (field, value) => void
- *   doctors       — array of { _id, fullName, medicalLicenseNumber }
- *   allergyInput  — string
+ *   form     — { doctor, diagnosis, notes, allergies }
+ *   onChange — (field, value) => void
+ *   doctors  — [{ _id, fullName, medicalLicenseNumber }]
+ *   allergyInput        — string
  *   onAllergyInputChange — (value) => void
- *   onAddAllergy  — () => void
- *   onRemoveAllergy — (index) => void
- *   onAddPrescription    — () => void
- *   onUpdatePrescription — (index, key, value) => void
- *   onRemovePrescription — (index) => void
+ *   onAddAllergy         — () => void
+ *   onRemoveAllergy      — (index) => void
  */
 const MedicalRecordFields = ({
   form,
@@ -28,9 +24,6 @@ const MedicalRecordFields = ({
   onAllergyInputChange,
   onAddAllergy,
   onRemoveAllergy,
-  onAddPrescription,
-  onUpdatePrescription,
-  onRemovePrescription,
 }) => {
   return (
     <div className="flex flex-col gap-4">
@@ -111,27 +104,6 @@ const MedicalRecordFields = ({
             Add
           </button>
         </div>
-      </div>
-
-      {/* Prescription */}
-      <div>
-        <label className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-2 block">
-          Prescription
-        </label>
-        <div className="flex flex-col gap-2">
-          {form.prescription.map((item, i) => (
-            <PrescriptionInput
-              key={i}
-              item={item}
-              index={i}
-              onChange={onUpdatePrescription}
-              onRemove={onRemovePrescription}
-            />
-          ))}
-        </div>
-        <button className="btn btn-sm btn-outline mt-2" onClick={onAddPrescription}>
-          <PlusIcon className="size-4" /> Add Medication
-        </button>
       </div>
 
     </div>

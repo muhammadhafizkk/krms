@@ -10,6 +10,7 @@ import PatientDetailPage from './pages/PatientDetailPage'
 import MedicationPage from './pages/MedicationPage'
 import CreateMedicationPage from './pages/CreateMedicationPage'
 import MedicationDetailPage from './pages/MedicationDetailPage'
+import DocumentsPage from './pages/DocumentsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 
@@ -56,6 +57,9 @@ const App = () => {
           <Route path='/medications' element={<ProtectedRoute user={user}><MedicationPage user={user} /></ProtectedRoute>} />
           <Route path="/medications/create" element={<ProtectedRoute user={user}><CreateMedicationPage /></ProtectedRoute>} />
           <Route path="/medications/:id" element={<ProtectedRoute user={user}><MedicationDetailPage /></ProtectedRoute>} />
+
+            {/* Document route */}
+          <Route path="/documents" element={<ProtectedRoute user={user}><DocumentsPage /></ProtectedRoute>} />
         </Routes>
     </div>
   )

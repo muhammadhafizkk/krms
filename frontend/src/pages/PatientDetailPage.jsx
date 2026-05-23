@@ -6,6 +6,7 @@ import { formatDate } from "../lib/utils";
 import PatientInfoCard from "../components/PatientInfoCard";
 import RecordDetail from "../components/RecordDetail";
 import NewRecordModal from "../components/NewRecordModal";
+import DocumentModal from "../components/documents/DocumentModal";
 import { PlusIcon } from "lucide-react"
 import BackButton from "../components/BackButton";
 
@@ -70,7 +71,15 @@ const PatientDetailPage = () => {
  
   return (
     <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-      <BackButton />
+      <div className="flex items-center justify-between w-full max-w-6xl">
+        <BackButton />
+        <button
+          className="btn btn-outline"
+          onClick={() => document.getElementById("doc_modal").showModal()}
+        >
+          📄 Documents
+        </button>
+      </div>
  
       <PatientInfoCard
         patient={patient}
@@ -156,6 +165,7 @@ const PatientDetailPage = () => {
       </div>
  
       <NewRecordModal patientId={id} onCreated={handleRecordCreated} />
+      <DocumentModal modalId="doc_modal" patient={patient} />
     </div>
   );
 };

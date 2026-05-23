@@ -1,6 +1,5 @@
-import React from 'react'
 import { Link, useNavigate } from 'react-router'
-import { PlusIcon, LogOutIcon, UsersRoundIcon, CrossIcon, LayoutDashboardIcon, PillIcon } from "lucide-react"
+import { LogOutIcon, UsersRoundIcon, CrossIcon, LayoutDashboardIcon, PillIcon, FileTextIcon } from "lucide-react"
 
 const Navbar = ({ user, setUser }) => {
     const navigate = useNavigate()
@@ -39,6 +38,12 @@ const Navbar = ({ user, setUser }) => {
                     <Link to={"/medications"} className='btn btn-ghost'>
                         <PillIcon className='size-5'/>
                         <span>Medications</span>
+                    </Link>
+                </li>
+                <li>
+                    <Link to={"/documents"} className='btn btn-ghost'>
+                        <FileTextIcon className='size-5'/>
+                        <span>Documents</span>
                     </Link>
                 </li>
                 </ul>

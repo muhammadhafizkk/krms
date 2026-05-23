@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  getAllPrescriptions,
   getPrescriptionByRecord,
   getPrescriptionById,
   createPrescription,
@@ -10,6 +11,7 @@ import {
 
 const router = express.Router();
 
+router.get("/", getAllPrescriptions);
 router.get("/record/:medicalRecordId", getPrescriptionByRecord);
 router.get("/:id", getPrescriptionById);
 router.post("/", createPrescription);

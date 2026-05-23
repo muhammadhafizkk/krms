@@ -45,7 +45,7 @@ const App = () => {
           <Route path="/register" element={user ? <Navigate to="/" /> :<RegisterPage setUser={setUser}/>} />
           
           {/* Protected routes */}
-          <Route path="/" element={<ProtectedRoute user={user}><DashboardPage /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute user={user}><DashboardPage user={user} /></ProtectedRoute>} />
 
             {/* Patient routes */}
           <Route path='/patients' element={<ProtectedRoute user={user}><PatientsPage /></ProtectedRoute>} />

@@ -25,10 +25,7 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
     const fetchMedications = async () => {
       try {
         const res = await api.get("/medications");
-        const rxOnly = res.data.filter(
-          (m) => m.dispensingCategory === "Prescription"
-        );
-        setMedications(rxOnly);
+        setMedications(res.data);
       } catch (error) {
         console.error("Failed to fetch medications", error);
       }
@@ -75,9 +72,9 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
       toast.error("Add at least one medication");
       return;
     }
-    const incomplete = rxItems.some((item) => !item.medication || !item.quantity || !item.dosage);
+    const incomplete = rxItems.some((item) => !item.medication || !item.quantity);
     if (incomplete) {
-      toast.error("Fill in medication, quantity and dosage for all items");
+      toast.error("Fill in medication and quantity for all items");
       return;
     }
     setSavingRx(true);
@@ -105,9 +102,9 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
       toast.error("Add at least one medication");
       return;
     }
-    const incomplete = rxItems.some((item) => !item.medication || !item.quantity || !item.dosage);
+    const incomplete = rxItems.some((item) => !item.medication || !item.quantity);
     if (incomplete) {
-      toast.error("Fill in medication, quantity and dosage for all items");
+      toast.error("Fill in medication and quantity for all items");
       return;
     }
     setSavingRx(true);

@@ -29,13 +29,6 @@ const prescriptionSchema = new mongoose.Schema(
           required: true,
           min: 1,
         },
-        dosage: {
-          type: String,
-          required: true,
-        },
-        instructions: {
-          type: String,
-        },
       },
     ],
     dispensed: {

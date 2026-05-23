@@ -1,7 +1,45 @@
 import Medication from "../models/Medication.js"
 
-export async function getAllMedications(_, res) {
+export async function getAllMedications(req, res) {
     try {
+        // ?alert=true — returns low stock OR near expiry OR already expired medications
+        if (req.query.alert === "true") {
+            const now = new Date();
+            const in30Days = new Date();
+            in30Days.setDate(now.getDate() + 30);
+
+            const alertMedications = await Medication.find({
+                $or: [
+                    { quantity: { $lte: 10 } },
+                    { expiryDate: { $lte: in30Days } },
+                ]
+            }).sort({ expiryDate: 1 });
+
+            // Attach an alertType to each so the frontend knows what to show
+            const withAlertType = alertMedications.map((med) => {
+                const obj = med.toObject();
+                const alerts = [];
+
+                if (med.quantity === 0) {
+                    alerts.push("out_of_stock");
+                } else if (med.quantity <= 10) {
+                    alerts.push("low_stock");
+                }
+
+                if (med.expiryDate < now) {
+                    alerts.push("expired");
+                } else if (med.expiryDate <= in30Days) {
+                    alerts.push("expiring_soon");
+                }
+
+                obj.alerts = alerts;
+                return obj;
+            });
+
+            return res.status(200).json(withAlertType);
+        }
+
+        // Default — return all medications
         const medications = await Medication.find()
             .limit(50)
             .sort({ createdAt: -1 })

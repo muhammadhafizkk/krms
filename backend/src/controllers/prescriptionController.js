@@ -3,8 +3,28 @@ import Medication from "../models/Medication.js";
 import MedicalRecord from "../models/MedicalRecord.js";
 import mongoose from "mongoose";
 
+// GET /api/prescriptions?dispensed=false|true
+export async function getAllPrescriptions(req, res) {
+  try {
+    const filter = {};
+    if (req.query.dispensed !== undefined) {
+      filter.dispensed = req.query.dispensed === "true";
+    }
+
+    const prescriptions = await Prescription.find(filter)
+      .populate("patient", "fullName NRIC address")
+      .populate("doctor", "fullName medicalLicenseNumber")
+      .populate("items.medication", "medicationName dosage unit dispensingCategory quantity")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(prescriptions);
+  } catch (error) {
+    console.error("Error in getAllPrescriptions controller", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 // GET /api/prescriptions/record/:medicalRecordId
-// Get the prescription linked to a medical record
 export async function getPrescriptionByRecord(req, res) {
   try {
     const { medicalRecordId } = req.params;
@@ -13,9 +33,7 @@ export async function getPrescriptionByRecord(req, res) {
       return res.status(400).json({ message: "Invalid medical record ID" });
     }
 
-    const prescription = await Prescription.findOne({
-      medicalRecord: medicalRecordId,
-    })
+    const prescription = await Prescription.findOne({ medicalRecord: medicalRecordId })
       .populate("patient", "fullName NRIC")
       .populate("doctor", "fullName medicalLicenseNumber")
       .populate("items.medication", "medicationName dosage unit dispensingCategory");
@@ -32,7 +50,6 @@ export async function getPrescriptionByRecord(req, res) {
 }
 
 // GET /api/prescriptions/:id
-// Get a single prescription by its own ID
 export async function getPrescriptionById(req, res) {
   try {
     const { id } = req.params;
@@ -58,7 +75,6 @@ export async function getPrescriptionById(req, res) {
 }
 
 // POST /api/prescriptions
-// Create a new prescription linked to a medical record
 export async function createPrescription(req, res) {
   try {
     const { medicalRecord, patient, doctor, items } = req.body;
@@ -69,22 +85,14 @@ export async function createPrescription(req, res) {
       });
     }
 
-    // Validate all medications exist and are Prescription-only category
+    // Validate all medications exist — no dispensingCategory restriction
     for (const item of items) {
       const medication = await Medication.findById(item.medication);
       if (!medication) {
-        return res.status(404).json({
-          message: `Medication not found: ${item.medication}`,
-        });
-      }
-      if (medication.dispensingCategory !== "Prescription") {
-        return res.status(400).json({
-          message: `${medication.medicationName} is an OTC medication and does not require a prescription`,
-        });
+        return res.status(404).json({ message: `Medication not found: ${item.medication}` });
       }
     }
 
-    // Check no prescription already exists for this medical record
     const existing = await Prescription.findOne({ medicalRecord });
     if (existing) {
       return res.status(400).json({
@@ -95,10 +103,7 @@ export async function createPrescription(req, res) {
     const prescription = new Prescription({ medicalRecord, patient, doctor, items });
     const saved = await prescription.save();
 
-    // Write the prescription ref back onto the MedicalRecord
-    await MedicalRecord.findByIdAndUpdate(medicalRecord, {
-      prescription: saved._id,
-    });
+    await MedicalRecord.findByIdAndUpdate(medicalRecord, { prescription: saved._id });
 
     const populated = await saved.populate([
       { path: "patient", select: "fullName NRIC" },
@@ -114,7 +119,6 @@ export async function createPrescription(req, res) {
 }
 
 // PUT /api/prescriptions/:id
-// Update prescription items (only allowed before dispensing)
 export async function updatePrescription(req, res) {
   try {
     const { id } = req.params;
@@ -136,18 +140,11 @@ export async function updatePrescription(req, res) {
 
     const { items } = req.body;
 
-    // Validate all medications exist and are Prescription-only
+    // Validate all medications exist — no dispensingCategory restriction
     for (const item of items) {
       const medication = await Medication.findById(item.medication);
       if (!medication) {
-        return res.status(404).json({
-          message: `Medication not found: ${item.medication}`,
-        });
-      }
-      if (medication.dispensingCategory !== "Prescription") {
-        return res.status(400).json({
-          message: `${medication.medicationName} is an OTC medication and does not require a prescription`,
-        });
+        return res.status(404).json({ message: `Medication not found: ${item.medication}` });
       }
     }
 
@@ -168,7 +165,6 @@ export async function updatePrescription(req, res) {
 }
 
 // PUT /api/prescriptions/:id/dispense
-// Dispense prescription — deducts stock from each medication
 export async function dispensePrescription(req, res) {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -197,16 +193,15 @@ export async function dispensePrescription(req, res) {
 
     // Check sufficient stock for every item before deducting anything
     for (const item of prescription.items) {
-      const medication = item.medication;
-      if (medication.quantity < item.quantity) {
+      if (item.medication.quantity < item.quantity) {
         await session.abortTransaction();
         return res.status(400).json({
-          message: `Insufficient stock for ${medication.medicationName}. Available: ${medication.quantity} ${medication.unit}`,
+          message: `Insufficient stock for ${item.medication.medicationName}. Available: ${item.medication.quantity} ${item.medication.unit}`,
         });
       }
     }
 
-    // Deduct stock for each item
+    // Deduct stock
     for (const item of prescription.items) {
       await Medication.findByIdAndUpdate(
         item.medication._id,
@@ -215,7 +210,6 @@ export async function dispensePrescription(req, res) {
       );
     }
 
-    // Mark as dispensed
     prescription.dispensed = true;
     prescription.dispensedAt = new Date();
     await prescription.save({ session });
@@ -239,7 +233,6 @@ export async function dispensePrescription(req, res) {
 }
 
 // DELETE /api/prescriptions/:id
-// Delete a prescription (only allowed before dispensing)
 export async function deletePrescription(req, res) {
   try {
     const { id } = req.params;

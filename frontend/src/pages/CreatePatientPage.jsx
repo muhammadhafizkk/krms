@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import api from "../lib/axios";
+import HTRModal from "../components/HTRModal";
 
 const CreatePatientPage = () => {
   const [formData, setFormData] = useState({
@@ -204,9 +205,21 @@ const CreatePatientPage = () => {
                 {loading ? "Adding..." : "Add Patient"}
               </button>
             </div>
-          </form>
+           </form>
+
+          {/* HTR divider */}
+          <div className="divider text-xs opacity-50 my-6">OR</div>
+          <button
+            type="button"
+            className="btn btn-outline w-full"
+            onClick={() => document.getElementById("htr_modal").showModal()}
+          >
+            📷 Upload Existing Medical Record Photo
+          </button>
         </div>
       </div>
+
+      <HTRModal onPatientCreated={(newPatient) => navigate(`/patients/${newPatient._id}`)} />
     </div>
   );
 };

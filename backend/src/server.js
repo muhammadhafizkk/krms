@@ -10,6 +10,7 @@ import medicationRoutes from "./routes/medicationRoutes.js"
 import prescriptionRoutes from "./routes/prescriptionRoutes.js"
 import walkInSaleRoutes from "./routes/walkInSaleRoutes.js"
 import documentRoutes from "./routes/documentRoutes.js"
+import htrRoutes from "./routes/htrRoutes.js"
 
 dotenv.config()
 
@@ -31,6 +32,7 @@ app.use("/api/medications", medicationRoutes)
 app.use("/api/prescriptions", prescriptionRoutes)
 app.use("/api/walkin-sales", walkInSaleRoutes)
 app.use("/api/documents", documentRoutes)
+app.use("/api/htr", htrRoutes)
 
 connectDB().then(() => {
     app.listen(PORT, () => {

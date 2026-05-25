@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import api from "../../lib/axios";
-import { formatDate } from "../../lib/utils";
 import DocumentRenderer from "./DocumentRenderer";
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -220,6 +219,7 @@ const DocumentModal = ({ modalId, patient, defaultType = "time-slip" }) => {
       toast.success("Document generated");
     } catch (err) {
       toast.error("Failed to generate document");
+      console.log(err)
     } finally {
       setSaving(false);
     }

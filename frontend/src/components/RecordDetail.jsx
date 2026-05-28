@@ -344,6 +344,12 @@ const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
 
   if (!record || !form) return null;
 
+  const EDIT_WINDOW_MINUTES = 20;
+
+  const isEditable =
+  Date.now() - new Date(record.createdAt).getTime() <
+  EDIT_WINDOW_MINUTES * 60 * 1000;
+
   const handleChange = (field, value) =>
     setForm((f) => ({ ...f, [field]: value }));
 
@@ -361,6 +367,11 @@ const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
     }));
 
   const handleSave = async () => {
+    if (!isEditable) {
+      toast.error("This record can no longer be edited");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await api.put(
@@ -379,6 +390,11 @@ const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
   };
 
   const handleDelete = async () => {
+    if (!isEditable) {
+      toast.error("This record can no longer be deleted");
+      return;
+    }
+    
     if (!window.confirm("Delete this medical record? This cannot be undone.")) return;
     setDeleting(true);
     try {
@@ -424,22 +440,33 @@ const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
         </div>
         <div className="flex gap-2">
           {!editing ? (
-            <>
-              <button
-                className="btn btn-sm btn-outline"
-                onClick={() => setEditing(true)}
-              >
-                <PencilIcon className="size-4" /> Edit
-              </button>
-              <button
-                className="btn btn-sm btn-error btn-outline"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                <TrashIcon className="size-4" />
-              </button>
-            </>
-          ) : (
+  <>
+    {isEditable && (
+      <>
+        <button
+          className="btn btn-sm btn-outline"
+          onClick={() => setEditing(true)}
+        >
+          <PencilIcon className="size-4" /> Edit
+        </button>
+
+        <button
+          className="btn btn-sm btn-error btn-outline"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          <TrashIcon className="size-4" />
+        </button>
+      </>
+    )}
+
+    {!isEditable && (
+      <span className="text-xs opacity-50 italic">
+        Record locked after 20 minutes
+      </span>
+    )}
+  </>
+) : (
             <>
               <button
                 className="btn btn-sm btn-primary"

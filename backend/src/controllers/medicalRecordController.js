@@ -90,32 +90,65 @@ export async function updateRecord(req, res) {
         const { patientId, id } = req.params
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: "Invalid record ID" })
+            return res.status(400).json({
+                message: "Invalid record ID"
+            })
         }
 
-        // Strip prescription from body — it is managed via /api/prescriptions
         const { prescription: _ignored, ...safeBody } = req.body
 
-        const updatedRecord = await MedicalRecord.findOneAndUpdate(
-            { _id: id, patient: patientId },
-            { $set: safeBody },
-            { new: true, runValidators: true }
-        )
-            .populate("doctor", "fullName email medicalLicenseNumber")
+        const record = await MedicalRecord.findOne({
+            _id: id,
+            patient: patientId
+        })
+
+        if (!record) {
+            return res.status(404).json({
+                message: "Medical record not found"
+            })
+        }
+
+        const EDIT_WINDOW_MS = 20 * 60 * 1000
+
+        const createdAt = new Date(record.createdAt)
+        const now = new Date()
+
+        const isEditable =
+            now.getTime() - createdAt.getTime() < EDIT_WINDOW_MS
+
+        if (!isEditable) {
+            return res.status(403).json({
+                message:
+                    "Medical record can only be edited within 20 minutes"
+            })
+        }
+
+        Object.assign(record, safeBody)
+
+        await record.save()
+
+        const updatedRecord = await MedicalRecord.findById(record._id)
+            .populate(
+                "doctor",
+                "fullName email medicalLicenseNumber"
+            )
             .populate({
                 path: "prescription",
                 populate: {
                     path: "items.medication",
-                    select: "medicationName dosage unit dispensingCategory"
+                    select:
+                        "medicationName dosage unit dispensingCategory"
                 }
             })
 
-        if (!updatedRecord) return res.status(404).json({ message: "Medical record not found" })
-
         res.status(200).json(updatedRecord)
+
     } catch (error) {
         console.error("Error in updateRecord controller", error)
-        res.status(500).json({ message: "Internal server error" })
+
+        res.status(500).json({
+            message: "Internal server error"
+        })
     }
 }
 

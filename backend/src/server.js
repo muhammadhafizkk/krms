@@ -11,6 +11,7 @@ import prescriptionRoutes from "./routes/prescriptionRoutes.js"
 import walkInSaleRoutes from "./routes/walkInSaleRoutes.js"
 import documentRoutes from "./routes/documentRoutes.js"
 import htrRoutes from "./routes/htrRoutes.js"
+import predictionRoutes from "./routes/predictionRoutes.js"
 
 dotenv.config()
 
@@ -33,6 +34,7 @@ app.use("/api/prescriptions", prescriptionRoutes)
 app.use("/api/walkin-sales", walkInSaleRoutes)
 app.use("/api/documents", documentRoutes)
 app.use("/api/htr", htrRoutes)
+app.use("/api/predictions", predictionRoutes)
 
 connectDB().then(() => {
     app.listen(PORT, () => {

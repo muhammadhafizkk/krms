@@ -12,6 +12,10 @@ const MedicationPage = ({ user }) => {
   const [filteredMedications, setFilteredMedications] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -41,11 +45,17 @@ const MedicationPage = ({ user }) => {
           medication.batchNumber.toLowerCase().includes(term)
       );
       setFilteredMedications(filtered);
+      setCurrentPage(1); // Reset to page 1 on search
     }, 300);
     return () => clearTimeout(delay);
   }, [searchTerm, medications]);
 
-  // Called after a sale is recorded — deducts quantities in local state
+  // --- PAGINATION CALCULATIONS ---
+  const totalPages = Math.ceil(filteredMedications.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentPageMedications = filteredMedications.slice(indexOfFirstItem, indexOfLastItem);
+
   const handleSaleCreated = (sale) => {
     setMedications((prev) =>
       prev.map((med) => {
@@ -77,7 +87,6 @@ const MedicationPage = ({ user }) => {
                 />
               </label>
 
-              {/* Walk-in Sale button */}
               <button
                 className="btn btn-outline btn-secondary whitespace-nowrap"
                 onClick={() =>
@@ -103,77 +112,110 @@ const MedicationPage = ({ user }) => {
           </div>
         )}
 
-        {!loading && medications.length > 0 && (
-          <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Medication Name</th>
-                  <th>Batch Number</th>
-                  <th>Category</th>
-                  <th>Stock</th>
-                  <th className="text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMedications.map((medication, index) => (
-                  <tr key={medication._id}>
-                    <th>{index + 1}</th>
-                    <td>{medication.medicationName}</td>
-                    <td className="opacity-60">{medication.batchNumber}</td>
-                    <td>
-                      <span
-                        className={`badge badge-sm badge-outline ${
-                          medication.dispensingCategory === "OTC"
-                            ? "badge-success"
-                            : "badge-warning"
-                        }`}
-                      >
-                        {medication.dispensingCategory || "—"}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          medication.quantity === 0
-                            ? "text-error font-semibold"
-                            : medication.quantity <= 10
-                            ? "text-warning font-semibold"
-                            : ""
-                        }
-                      >
-                        {medication.quantity} {medication.unit}
-                      </span>
-                    </td>
-                    <td className="text-right">
-                      <div className="dropdown dropdown-end">
-                        <div tabIndex={0} role="button" className="btn m-1">
-                          <ChevronRightIcon className="size-5" />
-                        </div>
-                        <ul
-                          tabIndex={-1}
-                          className="dropdown-content menu bg-base-100 rounded-box z-1 w-30 p-2 shadow-sm"
-                        >
-                          <li>
-                            <Link
-                              to={`/medications/${medication._id}`}
-                              className="btn btn-ghost"
-                            >
-                              View
-                            </Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
+        {!loading && medications.length > 0 && filteredMedications.length > 0 && (
+          <>
+            <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Medication Name</th>
+                    <th>Batch Number</th>
+                    <th>Category</th>
+                    <th>Stock</th>
+                    <th className="text-right"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {currentPageMedications.map((medication, index) => (
+                    <tr key={medication._id}>
+                      <th>{indexOfFirstItem + index + 1}</th>
+                      <td>{medication.medicationName}</td>
+                      <td className="opacity-60">{medication.batchNumber}</td>
+                      <td>
+                        <span
+                          className={`badge badge-sm badge-outline ${
+                            medication.dispensingCategory === "OTC"
+                              ? "badge-success"
+                              : "badge-warning"
+                          }`}
+                        >
+                          {medication.dispensingCategory || "—"}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          className={
+                            medication.quantity === 0
+                              ? "text-error font-semibold"
+                              : medication.quantity <= 10
+                              ? "text-warning font-semibold"
+                              : ""
+                          }
+                        >
+                          {medication.quantity} {medication.unit}
+                        </span>
+                      </td>
+                      <td className="text-right">
+                        <div className="dropdown dropdown-end">
+                          <div tabIndex={0} role="button" className="btn m-1">
+                            <ChevronRightIcon className="size-5" />
+                          </div>
+                          <ul
+                            tabIndex={-1}
+                            className="dropdown-content menu bg-base-100 rounded-box z-1 w-30 p-2 shadow-sm"
+                          >
+                            <li>
+                              <Link
+                                to={`/medications/${medication._id}`}
+                                className="btn btn-ghost"
+                              >
+                                View
+                              </Link>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Component */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <div className="join border border-base-300">
+                  <button 
+                    className="join-item btn btn-sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  >
+                    « Prev
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      className={`join-item btn btn-sm ${currentPage === pageNumber ? 'btn-primary' : ''}`}
+                      onClick={() => setCurrentPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+                  <button 
+                    className="join-item btn btn-sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  >
+                    Next »
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {!loading && filteredMedications.length === 0 && <MedicationsNotFound />}
+        {!loading && (medications.length === 0 || filteredMedications.length === 0) && <MedicationsNotFound />}
       </div>
 
       <WalkInSaleModal user={user} onSaleCreated={handleSaleCreated} />

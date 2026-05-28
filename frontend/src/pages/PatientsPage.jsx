@@ -13,6 +13,10 @@ const PatientsPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
+  // --- PAGINATION STATE ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Change this number to control page capacity
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -43,17 +47,24 @@ const PatientsPage = () => {
           patient.contactNumber.includes(term)
       );
       setFilteredPatients(filtered);
+      setCurrentPage(1); // Reset to page 1 when user modifies search query
     }, 300);
     return () => clearTimeout(delay);
   }, [searchTerm, patients]);
+
+  // --- PAGINATION COMPUTATION ---
+  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  
+  // This chunked array contains only the entries for the visible view frame
+  const currentPagePatients = filteredPatients.slice(indexOfFirstItem, indexOfLastItem);
 
   const openCheckInModal = (patient) => {
     setSelectedPatient(patient);
     document.getElementById("checkin_modal").showModal();
   };
 
-  // Called after successful check-in — no state update needed here
-  // since the checked-in list now lives on the Dashboard
   const handleCheckedIn = () => {};
 
   return (
@@ -88,61 +99,98 @@ const PatientsPage = () => {
           </div>
         )}
 
-        {!loading && patients.length > 0 && (
-          <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>NRIC</th>
-                  <th>Full Name</th>
-                  <th>Contact No.</th>
-                  <th className="text-right"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPatients.map((patient, index) => (
-                  <tr key={patient._id}>
-                    <th>{index + 1}</th>
-                    <td>{patient.NRIC}</td>
-                    <td>{patient.fullName}</td>
-                    <td>{patient.contactNumber}</td>
-                    <td className="text-right">
-                      <div className="dropdown dropdown-end">
-                        <div tabIndex={0} role="button" className="btn m-1">
-                          <ChevronRightIcon className="size-5" />
-                        </div>
-                        <ul
-                          tabIndex={-1}
-                          className="dropdown-content menu bg-base-100 rounded-box z-1 w-30 p-2 shadow-sm"
-                        >
-                          <li>
-                            <Link
-                              to={`/patients/${patient._id}`}
-                              className="btn btn-ghost"
-                            >
-                              View
-                            </Link>
-                          </li>
-                          <li>
-                            <button
-                              className="btn btn-ghost"
-                              onClick={() => openCheckInModal(patient)}
-                            >
-                              Check In
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
+        {!loading && patients.length > 0 && filteredPatients.length > 0 && (
+          <>
+            <div className="overflow-x-auto rounded-box border border-base-content/5 bg-base-100">
+              <table className="table">
+                <thead>
+                  <tr>
+                    {/* Changed # to represent actual row count across pages */}
+                    <th>#</th>
+                    <th>NRIC</th>
+                    <th>Full Name</th>
+                    <th>Contact No.</th>
+                    <th className="text-right"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {/* Map over chopped currentPagePatients instead of full array */}
+                  {currentPagePatients.map((patient, index) => (
+                    <tr key={patient._id}>
+                      <th>{indexOfFirstItem + index + 1}</th>
+                      <td>{patient.NRIC}</td>
+                      <td>{patient.fullName}</td>
+                      <td>{patient.contactNumber}</td>
+                      <td className="text-right">
+                        <div className="dropdown dropdown-end">
+                          <div tabIndex={0} role="button" className="btn m-1">
+                            <ChevronRightIcon className="size-5" />
+                          </div>
+                          <ul
+                            tabIndex={-1}
+                            className="dropdown-content menu bg-base-100 rounded-box z-1 w-30 p-2 shadow-sm"
+                          >
+                            <li>
+                              <Link
+                                to={`/patients/${patient._id}`}
+                                className="btn btn-ghost"
+                              >
+                                View
+                              </Link>
+                            </li>
+                            <li>
+                              <button
+                                className="btn btn-ghost"
+                                onClick={() => openCheckInModal(patient)}
+                              >
+                                Check In
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* --- DAISYUI PAGINATION ELEMENT --- */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <div className="join border border-base-300">
+                  <button 
+                    className="join-item btn btn-sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  >
+                    « Prev
+                  </button>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      className={`join-item btn btn-sm ${currentPage === pageNumber ? 'btn-primary' : ''}`}
+                      onClick={() => setCurrentPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </button>
+                  ))}
+
+                  <button 
+                    className="join-item btn btn-sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  >
+                    Next »
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {!loading && filteredPatients.length === 0 && <PatientsNotFound />}
+        {!loading && (patients.length === 0 || filteredPatients.length === 0) && <PatientsNotFound />}
       </div>
 
       <CheckInModal patient={selectedPatient} onCheckedIn={handleCheckedIn} />

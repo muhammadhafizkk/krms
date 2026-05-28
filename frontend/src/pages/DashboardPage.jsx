@@ -5,7 +5,6 @@ import toast from "react-hot-toast";
 import { formatDate } from "../lib/utils";
 import {
   FlaskConicalIcon,
-  PackageXIcon,
   CalendarClockIcon,
   AlertTriangleIcon,
   CheckCircleIcon,
@@ -13,9 +12,12 @@ import {
   UsersRoundIcon,
   ClockIcon,
   RefreshCwIcon,
+  TrendingUpIcon,
+  PackageXIcon,
 } from "lucide-react";
 
 const POLL_INTERVAL = 20000;
+const FLASK_BASE = "http://localhost:5002";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -27,13 +29,24 @@ const getGreeting = () => {
 const formatTime = (date) =>
   new Date(date).toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" });
 
+const daysUntilExpiry = (expiryDate) =>
+  Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+
 const STATUS_CONFIG = {
   "Checked In":  { badge: "badge-info",    row: "border-l-4 border-l-info" },
   "In Progress": { badge: "badge-warning", row: "border-l-4 border-l-warning" },
   Completed:     { badge: "badge-success", row: "border-l-4 border-l-success opacity-60" },
 };
-
 const STATUSES = ["Checked In", "In Progress", "Completed"];
+
+const ALERT_CONFIG = {
+  out_of_stock:  { label: "Out of Stock",  badge: "badge-error" },
+  low_stock:     { label: "Low Stock",     badge: "badge-warning" },
+  expired:       { label: "Expired",       badge: "badge-error" },
+  expiring_soon: { label: "Expiring Soon", badge: "badge-warning" },
+};
+
+// ─── Shared ───────────────────────────────────────────────────────────────────
 
 const LastUpdated = ({ time }) => {
   if (!time) return null;
@@ -79,8 +92,7 @@ const TodayVisitsSection = () => {
       const res = await api.put(`/visits/${visitId}`, { status: newStatus });
       setVisits((prev) => prev.map((v) => (v._id === visitId ? res.data : v)));
       toast.success(`Status updated to ${newStatus}`);
-    } catch (error) {
-      console.error("Failed to update visit status", error);
+    } catch {
       toast.error("Failed to update status");
     } finally {
       setUpdatingId(null);
@@ -143,7 +155,9 @@ const TodayVisitsSection = () => {
                         <button key={s} className="btn btn-xs btn-ghost opacity-60 hover:opacity-100"
                           disabled={updatingId === visit._id}
                           onClick={() => handleStatusChange(visit._id, s)}>
-                          {updatingId === visit._id ? <span className="loading loading-spinner loading-xs" /> : s}
+                          {updatingId === visit._id
+                            ? <span className="loading loading-spinner loading-xs" />
+                            : s}
                         </button>
                       ))}
                     </div>
@@ -181,7 +195,9 @@ const TodayVisitsSection = () => {
                         <button key={s} className="btn btn-xs btn-ghost opacity-40 hover:opacity-80"
                           disabled={updatingId === visit._id}
                           onClick={() => handleStatusChange(visit._id, s)}>
-                          {updatingId === visit._id ? <span className="loading loading-spinner loading-xs" /> : s}
+                          {updatingId === visit._id
+                            ? <span className="loading loading-spinner loading-xs" />
+                            : s}
                         </button>
                       ))}
                     </div>
@@ -210,7 +226,6 @@ const DispenseModal = ({ prescription, onDispensed }) => {
       onDispensed(prescription._id);
       document.getElementById("dispense_modal").close();
     } catch (error) {
-      console.error("Error dispensing prescription", error);
       toast.error(error.response?.data?.message || "Failed to dispense prescription");
     } finally {
       setDispensing(false);
@@ -222,7 +237,6 @@ const DispenseModal = ({ prescription, onDispensed }) => {
       <div className="modal-box max-w-lg">
         <h3 className="font-bold text-lg mb-1">Confirm Dispense</h3>
         <p className="text-sm opacity-60 mb-4">Dispensing will deduct stock and cannot be undone.</p>
-
         <div className="bg-base-200 rounded-lg p-4 mb-4">
           <p className="text-xs uppercase tracking-widest opacity-50 mb-1">Patient</p>
           <p className="font-semibold">{prescription.patient?.fullName}</p>
@@ -232,7 +246,6 @@ const DispenseModal = ({ prescription, onDispensed }) => {
           )}
           <p className="text-xs opacity-40 mt-1">Prescribed by Dr. {prescription.doctor?.fullName}</p>
         </div>
-
         <p className="text-xs uppercase tracking-widest opacity-50 mb-2">Medications to Dispense</p>
         <div className="flex flex-col gap-2 mb-4">
           {prescription.items?.map((item, i) => (
@@ -248,7 +261,6 @@ const DispenseModal = ({ prescription, onDispensed }) => {
             </div>
           ))}
         </div>
-
         <div className="modal-action">
           <button className="btn btn-ghost" onClick={() => document.getElementById("dispense_modal").close()}>
             Cancel
@@ -359,108 +371,298 @@ const PendingDispenseSection = () => {
   );
 };
 
-// ─── Medication Alerts ────────────────────────────────────────────────────────
+// ─── Inventory Status (merged predictions + alerts) ───────────────────────────
 
-const ALERT_CONFIG = {
-  out_of_stock:   { label: "Out of Stock",   classes: "border-error/30 bg-error/5",   badge: "badge-error",   icon: <PackageXIcon className="size-4 text-error" /> },
-  low_stock:      { label: "Low Stock",      classes: "border-warning/30 bg-warning/5", badge: "badge-warning", icon: <AlertTriangleIcon className="size-4 text-warning" /> },
-  expired:        { label: "Expired",        classes: "border-error/30 bg-error/5",   badge: "badge-error",   icon: <CalendarClockIcon className="size-4 text-error" /> },
-  expiring_soon:  { label: "Expiring Soon",  classes: "border-warning/30 bg-warning/5", badge: "badge-warning", icon: <CalendarClockIcon className="size-4 text-warning" /> },
-};
-
-const daysUntilExpiry = (expiryDate) =>
-  Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
-
-const MedicationAlertsSection = () => {
+const InventoryStatusSection = () => {
   const navigate = useNavigate();
-  const [alerts, setAlerts] = useState([]);
+
+  // Predictions from Flask
+  const [predictions, setPredictions] = useState([]);
+  const [generatedAt, setGeneratedAt] = useState(null);
+  const [flaskDown, setFlaskDown] = useState(false);
+  const [retraining, setRetraining] = useState(false);
+
+  // Alerts from Express (fallback + expiry data)
+  const [alertMap, setAlertMap] = useState({}); // medicationName → { alerts, expiryDate, _id }
+
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  // Always fetch alerts — provides expiry info to enrich predictions
+  // and serves as full fallback when Flask is down
   const fetchAlerts = useCallback(async () => {
     try {
       const res = await api.get("/medications?alert=true");
-      setAlerts(res.data);
-      setLastUpdated(new Date());
+      const map = {};
+      res.data.forEach((med) => {
+        map[med.medicationName] = {
+          alerts: med.alerts,
+          expiryDate: med.expiryDate,
+          _id: med._id,
+        };
+      });
+      setAlertMap(map);
     } catch (error) {
       console.error("Failed to fetch medication alerts", error);
-      if (loading) toast.error("Failed to load medication alerts");
-    } finally {
-      setLoading(false);
     }
   }, []);
 
+  // Fetch predictions from Flask
+  const fetchPredictions = useCallback(async () => {
+    try {
+      const res = await fetch(`${FLASK_BASE}/predict`);
+      if (!res.ok) throw new Error(`Flask returned ${res.status}`);
+      const data = await res.json();
+      setPredictions(data.predictions || []);
+      setGeneratedAt(data.generatedAt);
+      setFlaskDown(false);
+    } catch (error) {
+      console.error("Flask unavailable:", error);
+      setFlaskDown(true);
+    }
+  }, []);
+
+  const fetchAll = useCallback(async () => {
+    await Promise.all([fetchAlerts(), fetchPredictions()]);
+    setLastUpdated(new Date());
+    setLoading(false);
+  }, [fetchAlerts, fetchPredictions]);
+
   useEffect(() => {
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, POLL_INTERVAL);
+    fetchAll();
+    const interval = setInterval(fetchAll, POLL_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchAlerts]);
+  }, [fetchAll]);
+
+  const handleRetrain = async () => {
+    setRetraining(true);
+    try {
+      const res = await fetch(`${FLASK_BASE}/retrain`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      toast.success("Model retrained successfully");
+      await fetchPredictions();
+    } catch {
+      toast.error("Retraining failed");
+    } finally {
+      setRetraining(false);
+    }
+  };
+
+  // ── Merge predictions with alert data ──────────────────────────────────────
+  // Build unified rows: start from predictions, enrich with alert info
+  // Then append any alert-only medications not covered by predictions
+  const buildRows = () => {
+    const rows = [];
+    const coveredNames = new Set();
+
+    // Prediction rows — enriched with expiry/alert data
+    for (const p of predictions) {
+      const alertInfo = alertMap[p.medicationName];
+      coveredNames.add(p.medicationName);
+      rows.push({
+        type: "prediction",
+        medicationId: p.medicationId || alertInfo?._id,
+        medicationName: p.medicationName,
+        currentStock: p.currentStock,
+        predictedDemand: p.predictedDemandNextMonth,
+        weeksUntilStockout: p.weeksUntilStockout,
+        recommendReorder: p.recommendReorder,
+        alerts: alertInfo?.alerts || [],
+        expiryDate: alertInfo?.expiryDate || null,
+      });
+    }
+
+    // Alert-only rows — medications with issues that the model doesn't know about
+    for (const [name, info] of Object.entries(alertMap)) {
+      if (!coveredNames.has(name)) {
+        rows.push({
+          type: "alert_only",
+          medicationId: info._id,
+          medicationName: name,
+          currentStock: null,
+          predictedDemand: null,
+          weeksUntilStockout: null,
+          recommendReorder: false,
+          alerts: info.alerts,
+          expiryDate: info.expiryDate,
+        });
+      }
+    }
+
+    // Sort: reorder flagged first, then by weeks until stockout, then alerts
+    rows.sort((a, b) => {
+      if (a.recommendReorder !== b.recommendReorder) return a.recommendReorder ? -1 : 1;
+      const aW = a.weeksUntilStockout ?? 999;
+      const bW = b.weeksUntilStockout ?? 999;
+      if (aW !== bW) return aW - bW;
+      return (b.alerts.length) - (a.alerts.length);
+    });
+
+    return rows;
+  };
+
+  const rows = buildRows();
+  const reorderCount = rows.filter((r) => r.recommendReorder).length;
+  const alertOnlyCount = Object.keys(alertMap).length;
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
-        <AlertTriangleIcon className="size-5 text-error" />
-        <h2 className="text-lg font-bold">Medication Alerts</h2>
-        {!loading && alerts.length > 0 && (
-          <span className="badge badge-error">{alerts.length}</span>
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-1">
+        <TrendingUpIcon className="size-5 text-secondary" />
+        <h2 className="text-lg font-bold">Inventory Status</h2>
+        {!loading && reorderCount > 0 && (
+          <span className="badge badge-secondary">{reorderCount} to reorder</span>
+        )}
+        {!loading && alertOnlyCount > 0 && (
+          <span className="badge badge-error">{alertOnlyCount} alerts</span>
         )}
         <LastUpdated time={lastUpdated} />
+        <button
+          className="btn btn-xs btn-outline ml-2"
+          onClick={handleRetrain}
+          disabled={retraining || flaskDown}
+          title={flaskDown ? "Flask service is offline" : "Retrain prediction model"}
+        >
+          {retraining
+            ? <span className="loading loading-spinner loading-xs" />
+            : <RefreshCwIcon className="size-3" />}
+          {retraining ? "Retraining..." : "Retrain"}
+        </button>
       </div>
 
-      {loading && <div className="text-center py-6 opacity-50">Loading...</div>}
-
-      {!loading && alerts.length === 0 && (
-        <div className="flex items-center gap-2 text-sm opacity-40 py-4">
-          <CheckCircleIcon className="size-4" /> No medication alerts
+      {/* Flask status indicator */}
+      {!loading && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`badge badge-xs ${flaskDown ? "badge-error" : "badge-success"}`}>
+            {flaskDown ? "Predictions offline" : "Predictions active"}
+          </span>
+          {generatedAt && !flaskDown && (
+            <span className="text-xs opacity-30">
+              Model ran: {new Date(generatedAt).toLocaleString("en-MY")}
+            </span>
+          )}
         </div>
       )}
 
-      {!loading && alerts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {alerts.map((med) => {
-            const primaryAlert =
-              med.alerts.includes("out_of_stock") || med.alerts.includes("expired")
-                ? med.alerts.find((a) => a === "out_of_stock" || a === "expired")
-                : med.alerts[0];
-            const config = ALERT_CONFIG[primaryAlert];
-            const days = daysUntilExpiry(med.expiryDate);
+      {loading && <div className="text-center py-6 opacity-50">Loading...</div>}
 
-            return (
-              <div key={med._id}
-                className={`card border shadow-sm hover:shadow-md transition-shadow cursor-pointer ${config.classes}`}
-                onClick={() => navigate(`/medications/${med._id}`)}>
-                <div className="card-body p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      {config.icon}
-                      <p className="font-semibold">{med.medicationName}</p>
-                    </div>
-                    <ChevronRightIcon className="size-4 opacity-30" />
-                  </div>
-                  <p className="text-xs opacity-50">Batch: {med.batchNumber}</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {med.alerts.map((alert) => (
-                      <span key={alert} className={`badge badge-sm badge-outline ${ALERT_CONFIG[alert].badge}`}>
-                        {ALERT_CONFIG[alert].label}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-2 flex flex-col gap-0.5">
-                    {(med.alerts.includes("low_stock") || med.alerts.includes("out_of_stock")) && (
-                      <p className="text-xs opacity-70">Stock: {med.quantity} {med.unit} remaining</p>
+      {/* Flask down — show alert-only fallback */}
+      {!loading && flaskDown && alertOnlyCount === 0 && (
+        <div className="flex items-center gap-2 text-sm opacity-40 py-4">
+          <CheckCircleIcon className="size-4" /> No inventory alerts. Start Flask to see predictions.
+        </div>
+      )}
+
+      {/* Main table */}
+      {!loading && rows.length > 0 && (
+        <div className="overflow-x-auto rounded-box border border-base-content/5">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Medication</th>
+                <th className="text-right">Stock</th>
+                {!flaskDown && <th className="text-right">Predicted Demand</th>}
+                {!flaskDown && <th className="text-right">Weeks Left</th>}
+                <th>Alerts</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => {
+                const days = row.expiryDate ? daysUntilExpiry(row.expiryDate) : null;
+                const hasExpiry = row.alerts.includes("expired") || row.alerts.includes("expiring_soon");
+
+                return (
+                  <tr
+                    key={row.medicationId}
+                    className={`hover cursor-pointer ${row.recommendReorder ? "border-l-4 border-l-secondary" : ""}`}
+                    onClick={() => row.medicationId && navigate(`/medications/${row.medicationId}`)}
+                  >
+                    {/* Name */}
+                    <td>
+                      <p className="font-medium">{row.medicationName}</p>
+                      {hasExpiry && days !== null && (
+                        <p className="text-xs opacity-50 flex items-center gap-1 mt-0.5">
+                          <CalendarClockIcon className="size-3" />
+                          {days < 0
+                            ? `Expired ${Math.abs(days)}d ago`
+                            : days === 0
+                            ? "Expires today"
+                            : `Expires in ${days}d`}
+                        </p>
+                      )}
+                    </td>
+
+                    {/* Stock */}
+                    <td className="text-right tabular-nums">
+                      {row.currentStock !== null ? (
+                        <span className={
+                          row.currentStock === 0 ? "text-error font-semibold"
+                          : row.currentStock <= 10 ? "text-warning font-semibold"
+                          : ""
+                        }>
+                          {row.currentStock}
+                        </span>
+                      ) : <span className="opacity-30">—</span>}
+                    </td>
+
+                    {/* Predicted demand — hidden when Flask down */}
+                    {!flaskDown && (
+                      <td className="text-right tabular-nums">
+                        {row.predictedDemand !== null
+                          ? row.predictedDemand
+                          : <span className="opacity-30">—</span>}
+                      </td>
                     )}
-                    {(med.alerts.includes("expiring_soon") || med.alerts.includes("expired")) && (
-                      <p className="text-xs opacity-70">
-                        {days < 0 ? `Expired ${Math.abs(days)} days ago`
-                          : days === 0 ? "Expires today"
-                          : `Expires in ${days} days (${formatDate(new Date(med.expiryDate))})`}
-                      </p>
+
+                    {/* Weeks until stockout */}
+                    {!flaskDown && (
+                      <td className="text-right tabular-nums">
+                        {row.weeksUntilStockout !== null ? (
+                          row.weeksUntilStockout <= 2
+                            ? <span className="text-error font-semibold">{row.weeksUntilStockout}w</span>
+                            : row.weeksUntilStockout <= 4
+                            ? <span className="text-warning font-semibold">{row.weeksUntilStockout}w</span>
+                            : <span className="opacity-60">{row.weeksUntilStockout}w</span>
+                        ) : <span className="opacity-30">—</span>}
+                      </td>
                     )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+
+                    {/* Alert badges */}
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {row.alerts.length > 0
+                          ? row.alerts.map((alert) => (
+                              <span key={alert} className={`badge badge-xs badge-outline ${ALERT_CONFIG[alert].badge}`}>
+                                {ALERT_CONFIG[alert].label}
+                              </span>
+                            ))
+                          : <span className="opacity-20 text-xs">—</span>}
+                      </div>
+                    </td>
+
+                    {/* Reorder status */}
+                    <td>
+                      {row.recommendReorder
+                        ? <span className="badge badge-secondary badge-sm badge-outline">Reorder</span>
+                        : row.alerts.includes("out_of_stock")
+                        ? <span className="badge badge-error badge-sm badge-outline flex items-center gap-1">
+                            <PackageXIcon className="size-3" /> Out of Stock
+                          </span>
+                        : <span className="badge badge-ghost badge-sm">OK</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {!loading && rows.length === 0 && !flaskDown && (
+        <div className="flex items-center gap-2 text-sm opacity-40 py-4">
+          <CheckCircleIcon className="size-4" /> All medications are well stocked
         </div>
       )}
     </div>
@@ -497,9 +699,11 @@ const DashboardPage = ({ user }) => {
           </section>
         )}
 
-        <section className="card bg-base-100 shadow-sm">
-          <div className="card-body"><MedicationAlertsSection /></div>
-        </section>
+        {!isDoctor && (
+          <section className="card bg-base-100 shadow-sm">
+            <div className="card-body"><InventoryStatusSection /></div>
+          </section>
+        )}
 
       </div>
     </div>

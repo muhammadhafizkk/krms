@@ -12,7 +12,11 @@ import subprocess
 load_dotenv("../backend/.env")
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"])
+allowed_origins = [
+    "http://localhost:5173",
+    os.getenv("FRONTEND_URL", "")
+]
+CORS(app, origins=[o for o in allowed_origins if o])
 
 MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
@@ -164,4 +168,5 @@ def retrain():
         return jsonify({"error": f"Retraining failed: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(port=5002, debug=True)
+    port = int(os.environ.get("PORT", 5002))
+    app.run(host="0.0.0.0", port=port)

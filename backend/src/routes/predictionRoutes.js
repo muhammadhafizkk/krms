@@ -1,7 +1,7 @@
 import express from "express";
 import { protect } from "../middleware/auth.js";
 
-const FLASK_URL = "http://localhost:5002";
+const FLASK_URL = process.env.FLASK_URL || "http://localhost:5002";
 
 const router = express.Router();
 

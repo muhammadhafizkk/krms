@@ -26,10 +26,25 @@ const allowedOrigins = [
 
 console.log("FRONTEND_URL =", process.env.FRONTEND_URL);
 console.log("Allowed Origins =", allowedOrigins);
-app.use(cors({
-    origin: allowedOrigins
-}))
-app.use(express.json())
+const corsOptions = {
+    origin: function (origin, callback) {
+        // allow requests with no origin (like Postman or mobile apps)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            return callback(new Error("Not allowed by CORS: " + origin));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // IMPORTANT for preflight
+app.use(express.json());
 
 //routes
 app.use("/api/users", authRoutes)

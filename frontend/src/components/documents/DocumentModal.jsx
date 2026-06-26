@@ -223,7 +223,7 @@ const DocumentModal = ({ modalId, patient, defaultType = "time-slip" }) => {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [serialNumber, setSerialNumber] = useState(null);
-  const [generated, setGenerated] = useState(null);
+  const [_generated, setGenerated] = useState(null);
   const printRef = useRef(null);
 
   useEffect(() => {

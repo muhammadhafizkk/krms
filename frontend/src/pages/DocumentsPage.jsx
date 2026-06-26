@@ -64,7 +64,7 @@ const DocumentsPage = () => {
         result = result.filter(
           (d) =>
             d.patient?.fullName?.toLowerCase().includes(term) ||
-            d.patient?.icNumber?.includes(term) ||
+            d.patient?.NRIC?.includes(term) ||
             d.serialNumber?.toLowerCase().includes(term)
         );
       }

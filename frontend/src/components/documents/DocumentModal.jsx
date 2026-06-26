@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import api from "../../lib/axios";
 import DocumentRenderer from "./DocumentRenderer";
+import { Calendar, Clock } from "lucide-react"; // Imported Lucide icons
 
 const today = () => new Date().toISOString().split("T")[0];
 
@@ -27,15 +28,15 @@ const FORMS = {
   },
   "time-slip": {
     label: "Time Slip",
-    defaults: { date: today(), timeFrom: "", timeTo: "" },
+    defaults: { date: today(), timeFrom: "09:00", timeTo: "10:00" }, // Modified to standard 24h for time pickers
   },
   "sick-leave": {
     label: "Sick Leave",
-    defaults: { date: today(), days: "", dateFrom: today(), dateTo: "", diagnosis: "", doctorName: "", qualification: "" },
+    defaults: { date: today(), days: "", dateFrom: today(), dateTo: today(), diagnosis: "", doctorName: "", qualification: "" },
   },
   "cuti-sekolah": {
     label: "Cuti Sekolah",
-    defaults: { date: today(), schoolName: "", days: "", dateFrom: today(), dateTo: "" },
+    defaults: { date: today(), schoolName: "", days: "", dateFrom: today(), dateTo: today() },
   },
   receipt: {
     label: "Official Receipt",
@@ -51,14 +52,43 @@ const Field = ({ label, children }) => (
 );
 
 const FormFields = ({ type, form, onChange }) => {
+  // Regular text / standard inputs
   const inp = (field, placeholder = "") => (
     <input className="input input-bordered input-sm w-full" value={form[field] || ""}
       onChange={e => onChange(field, e.target.value)} placeholder={placeholder} />
   );
+
+  // Upgraded Native Date Picker Field wrapper
+  const dateInp = (field) => (
+    <div className="relative flex items-center">
+      <Calendar className="absolute left-3 size-4 text-base-content/40 pointer-events-none" />
+      <input 
+        type="date" 
+        className="input input-bordered input-sm w-full pl-9 tabular-nums" 
+        value={form[field] || ""}
+        onChange={e => onChange(field, e.target.value)} 
+      />
+    </div>
+  );
+
+  // Upgraded Native Time Picker Field wrapper
+  const timeInp = (field) => (
+    <div className="relative flex items-center">
+      <Clock className="absolute left-3 size-4 text-base-content/40 pointer-events-none" />
+      <input 
+        type="time" 
+        className="input input-bordered input-sm w-full pl-9 tabular-nums" 
+        value={form[field] || ""}
+        onChange={e => onChange(field, e.target.value)} 
+      />
+    </div>
+  );
+
   const area = (field, rows = 3, placeholder = "") => (
     <textarea className="textarea textarea-bordered textarea-sm w-full" rows={rows}
       value={form[field] || ""} onChange={e => onChange(field, e.target.value)} placeholder={placeholder} />
   );
+  
   const grid2 = (...items) => (
     <div className="grid grid-cols-2 gap-3">{items}</div>
   );
@@ -67,7 +97,7 @@ const FormFields = ({ type, form, onChange }) => {
     case "medical-checkup":
       return (
         <div className="flex flex-col gap-2">
-          <Field label="Date">{inp("date")}</Field>
+          <Field label="Date">{dateInp("date")}</Field>
           {grid2(
             <Field label="Marital Status">{inp("maritalStatus")}</Field>,
             <Field label="Occupation">{inp("occupation")}</Field>
@@ -127,7 +157,7 @@ const FormFields = ({ type, form, onChange }) => {
     case "referral":
       return (
         <div className="flex flex-col gap-2">
-          <Field label="Date">{inp("date")}</Field>
+          <Field label="Date">{dateInp("date")}</Field>
           <Field label="Recipient (Line 1)">{inp("recipientLine1", "e.g. Hospital Kemaman")}</Field>
           <Field label="Recipient (Line 2)">{inp("recipientLine2", "Department or ward (optional)")}</Field>
           <Field label="Letter Body">{area("body", 8, "Write referral details here...")}</Field>
@@ -137,10 +167,10 @@ const FormFields = ({ type, form, onChange }) => {
     case "time-slip":
       return (
         <div className="flex flex-col gap-2">
-          <Field label="Date">{inp("date")}</Field>
+          <Field label="Date">{dateInp("date")}</Field>
           {grid2(
-            <Field label="Time From">{inp("timeFrom", "e.g. 9:00 AM")}</Field>,
-            <Field label="Time To">{inp("timeTo", "e.g. 11:30 AM")}</Field>
+            <Field label="Time From">{timeInp("timeFrom")}</Field>,
+            <Field label="Time To">{timeInp("timeTo")}</Field>
           )}
         </div>
       );
@@ -148,12 +178,12 @@ const FormFields = ({ type, form, onChange }) => {
     case "sick-leave":
       return (
         <div className="flex flex-col gap-2">
-          <Field label="Date">{inp("date")}</Field>
+          <Field label="Date">{dateInp("date")}</Field>
           <Field label="Diagnosis">{inp("diagnosis")}</Field>
           <Field label="Number of Days">{inp("days")}</Field>
           {grid2(
-            <Field label="From">{inp("dateFrom")}</Field>,
-            <Field label="To">{inp("dateTo")}</Field>
+            <Field label="From">{dateInp("dateFrom")}</Field>,
+            <Field label="To">{dateInp("dateTo")}</Field>
           )}
           <Field label="Doctor Name">{inp("doctorName")}</Field>
           <Field label="Qualification">{inp("qualification")}</Field>
@@ -163,12 +193,12 @@ const FormFields = ({ type, form, onChange }) => {
     case "cuti-sekolah":
       return (
         <div className="flex flex-col gap-2">
-          <Field label="Date">{inp("date")}</Field>
+          <Field label="Date">{dateInp("date")}</Field>
           <Field label="School Name">{inp("schoolName", "e.g. SK Taman Baiduri")}</Field>
           <Field label="Number of Days">{inp("days")}</Field>
           {grid2(
-            <Field label="From">{inp("dateFrom")}</Field>,
-            <Field label="To">{inp("dateTo")}</Field>
+            <Field label="From">{dateInp("dateFrom")}</Field>,
+            <Field label="To">{dateInp("dateTo")}</Field>
           )}
         </div>
       );
@@ -176,7 +206,7 @@ const FormFields = ({ type, form, onChange }) => {
     case "receipt":
       return (
         <div className="flex flex-col gap-2">
-          <Field label="Date">{inp("date")}</Field>
+          <Field label="Date">{dateInp("date")}</Field>
           <Field label="Amount (RM)">{inp("amount", "e.g. 45.00")}</Field>
           <Field label="Payment For">{inp("paymentFor", "e.g. Consultation & medication")}</Field>
           <Field label="Cheque No. (leave blank if cash)">{inp("chequeNo")}</Field>
@@ -276,7 +306,7 @@ const DocumentModal = ({ modalId, patient, defaultType = "time-slip" }) => {
             {/* Patient info summary */}
             <div className="bg-base-200 rounded-lg p-3 mb-4 text-sm flex gap-6">
               <div><span className="opacity-60">Patient</span> <strong>{patient?.fullName}</strong></div>
-              <div><span className="opacity-60">NRIC</span> <strong>{patient?.icNumber}</strong></div>
+              <div><span className="opacity-60">NRIC</span> <strong>{patient?.NRIC}</strong></div>
             </div>
 
             <FormFields type={type} form={form} onChange={handleChange} />

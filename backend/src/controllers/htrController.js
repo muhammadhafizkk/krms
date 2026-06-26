@@ -1,6 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import { GoogleGenAI } from "@google/genai";
 
 const PROMPT = `You are a medical records assistant for a Malaysian clinic. 
 You will be given one or more photos of handwritten patient medical records.
@@ -45,13 +43,13 @@ export const extractFromImages = async (req, res) => {
       return res.status(400).json({ message: "No images uploaded" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    // Initialize it here! By the time a user hits this API route, 
+    // your .env file is guaranteed to be fully loaded into memory.
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-    // Build the parts array — text prompt + all images
-    const parts = [{ text: PROMPT }];
-
+    const contents = [PROMPT];
     for (const file of req.files) {
-      parts.push({
+      contents.push({
         inlineData: {
           mimeType: file.mimetype,
           data: file.buffer.toString("base64"),
@@ -59,10 +57,12 @@ export const extractFromImages = async (req, res) => {
       });
     }
 
-    const result = await model.generateContent(parts);
-    const text = result.response.text().trim();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash", 
+      contents: contents,
+    });
 
-    // Strip any accidental markdown fences
+    const text = response.text.trim();
     const clean = text.replace(/```json|```/g, "").trim();
     const extracted = JSON.parse(clean);
 

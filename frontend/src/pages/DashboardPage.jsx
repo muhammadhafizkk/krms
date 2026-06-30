@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 const POLL_INTERVAL = 20000;
-const FLASK_BASE = "http://localhost:5002";
+const FLASK_BASE = import.meta.env.VITE_FLASK_BASE;
 
 const getGreeting = () => {
   const hour = new Date().getHours();

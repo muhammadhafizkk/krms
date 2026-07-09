@@ -1,5 +1,6 @@
 import os
 import pickle
+import sys
 import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request
@@ -136,7 +137,7 @@ def retrain():
         if os.path.exists(EXCEL_FOLDER):
             # Parse real Excel files into real_consumption.csv
             subprocess.run(
-                ["python3", "parse_excel.py", "--folder", EXCEL_FOLDER],
+                ["python", "parse_excel.py", "--folder", EXCEL_FOLDER],
                 check=True,
                 cwd=script_dir
             )
@@ -144,14 +145,14 @@ def retrain():
             # No real data — fall back to synthetic generation
             print(f"Excel folder not found at {EXCEL_FOLDER}, generating synthetic data")
             subprocess.run(
-                ["python3", "generate_data.py"],
+                ["python", "generate_data.py"],
                 check=True,
                 cwd=script_dir
             )
 
         # Train on whichever CSV is available (train_model.py prefers real_consumption.csv)
         subprocess.run(
-            ["python3", "train_model.py"],
+            ["python", "train_model.py"],
             check=True,
             cwd=script_dir
         )

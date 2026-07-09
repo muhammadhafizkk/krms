@@ -303,7 +303,7 @@ def main():
 
     if not os.path.exists(args.folder):
         print(f"Folder not found: {args.folder}")
-        sys.exit(1)
+        return
 
     print(f"Parsing Excel files in: {args.folder}\n")
     records, unmapped = parse_all(args.folder)

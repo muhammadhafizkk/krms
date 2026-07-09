@@ -1,12 +1,5 @@
 import { XIcon } from "lucide-react";
 
-/**
- * PrescriptionInput
- *
- * One row in the prescription items editor.
- * Shows all medications regardless of dispensingCategory.
- * Dosage is already set per medication — no separate input needed.
- */
 const PrescriptionInput = ({ item, index, medications, onChange, onRemove }) => {
   return (
     <div className="bg-base-200 rounded-lg p-3 flex items-center gap-2 text-sm">

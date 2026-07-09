@@ -6,7 +6,8 @@ import CheckInModal from "../components/CheckInModal";
 import { ChevronRightIcon, SearchIcon } from "lucide-react";
 import { Link } from "react-router";
 
-const PatientsPage = () => {
+const PatientsPage = ({ user }) => {
+  const isDoctor = user?.role === "Doctor";
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
@@ -71,7 +72,8 @@ const PatientsPage = () => {
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto p-4 mt-6">
         <div className="flex flex-col gap-4 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h1 className="text-2xl font-bold">Patients</h1>
             <div className="flex items-center gap-3">
               <label className="input input-bordered flex items-center gap-2 w-full md:w-72">
                 <SearchIcon className="size-4 opacity-60" />
@@ -83,12 +85,14 @@ const PatientsPage = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </label>
-              <Link
-                to={"/patients/create"}
-                className="btn btn-primary whitespace-nowrap"
-              >
-                + Add Patient
-              </Link>
+              {!isDoctor && (
+                <Link
+                  to={"/patients/create"}
+                  className="btn btn-primary whitespace-nowrap"
+                >
+                  + Add Patient
+                </Link>
+              )}
             </div>
           </div>
         </div>

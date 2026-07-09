@@ -5,7 +5,8 @@ import { formatDate } from "../lib/utils";
 import Detail from "../components/Detail";
 import { PencilIcon, SaveIcon, XIcon, TrashIcon } from "lucide-react";
 
-const PatientInfoCard = ({ patient, onUpdated, onDeleted }) => {
+const PatientInfoCard = ({ patient, onUpdated, onDeleted, user }) => {
+  const isDoctor = user?.role === "Doctor";
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -95,6 +96,7 @@ const PatientInfoCard = ({ patient, onUpdated, onDeleted }) => {
           {/* Card header */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="card-title text-2xl">Patient Details</h2>
+            {!isDoctor && (
             <div className="flex gap-2">
               {!editing ? (
                 <>
@@ -131,6 +133,7 @@ const PatientInfoCard = ({ patient, onUpdated, onDeleted }) => {
                 </>
               )}
             </div>
+            )}
           </div>
  
           <div className="flex flex-col md:flex-row gap-6">

@@ -49,14 +49,14 @@ const App = () => {
           <Route path="/" element={<ProtectedRoute user={user}><DashboardPage user={user} /></ProtectedRoute>} />
 
             {/* Patient routes */}
-          <Route path='/patients' element={<ProtectedRoute user={user}><PatientsPage /></ProtectedRoute>} />
+          <Route path='/patients' element={<ProtectedRoute user={user}><PatientsPage user={user}/></ProtectedRoute>} />
           <Route path="/patients/create" element={<ProtectedRoute user={user}><CreatePatientPage /></ProtectedRoute>} />
-          <Route path="/patients/:id" element={<ProtectedRoute user={user}><PatientDetailPage /></ProtectedRoute>} />
+          <Route path="/patients/:id" element={<ProtectedRoute user={user}><PatientDetailPage user={user}/></ProtectedRoute>} />
 
             {/* Medication routes */}
           <Route path='/medications' element={<ProtectedRoute user={user}><MedicationPage user={user} /></ProtectedRoute>} />
           <Route path="/medications/create" element={<ProtectedRoute user={user}><CreateMedicationPage /></ProtectedRoute>} />
-          <Route path="/medications/:id" element={<ProtectedRoute user={user}><MedicationDetailPage /></ProtectedRoute>} />
+          <Route path="/medications/:id" element={<ProtectedRoute user={user}><MedicationDetailPage user={user} /></ProtectedRoute>} />
 
             {/* Document route */}
           <Route path="/documents" element={<ProtectedRoute user={user}><DocumentsPage /></ProtectedRoute>} />

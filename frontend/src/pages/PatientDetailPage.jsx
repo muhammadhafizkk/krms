@@ -10,7 +10,8 @@ import DocumentModal from "../components/documents/DocumentModal";
 import { PlusIcon } from "lucide-react"
 import BackButton from "../components/BackButton";
 
-const PatientDetailPage = () => {
+const PatientDetailPage = ({ user }) => {
+  const isDoctor = user?.role === "Doctor";
   const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
@@ -85,6 +86,7 @@ const PatientDetailPage = () => {
         patient={patient}
         onUpdated={handlePatientUpdated}
         onDeleted={handlePatientDeleted}
+        user={user}
       />
  
       {/* Medical Records Card */}
@@ -130,14 +132,16 @@ const PatientDetailPage = () => {
                     </li>
                   ))}
                 </ul>
-                <button
-                  className="btn btn-primary btn-outline w-full"
-                  onClick={() =>
-                    document.getElementById("new_record_modal").showModal()
-                  }
-                >
-                  <PlusIcon className="size-4" /> New Record
-                </button>
+                {isDoctor && (
+                  <button
+                    className="btn btn-primary btn-outline w-full"
+                    onClick={() =>
+                      document.getElementById("new_record_modal").showModal()
+                    }
+                  >
+                    <PlusIcon className="size-4" /> New Record
+                  </button>
+                )}
               </div>
  
               <div className="divider md:divider-horizontal" />
@@ -151,6 +155,7 @@ const PatientDetailPage = () => {
                     patientId={id}
                     onUpdated={handleRecordUpdated}
                     onDeleted={handleRecordDeleted}
+                    user={user}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full opacity-40 gap-2 py-10">
@@ -164,7 +169,7 @@ const PatientDetailPage = () => {
         </div>
       </div>
  
-      <NewRecordModal patientId={id} onCreated={handleRecordCreated} />
+      <NewRecordModal patientId={id} onCreated={handleRecordCreated} user={user} />
       <DocumentModal modalId="doc_modal" patient={patient} />
     </div>
   );

@@ -10,7 +10,8 @@ import PrescriptionRow from "./PrescriptionRow";
 // ─── Prescription Panel ───────────────────────────────────────────────────────
 // Handles create / edit / dispense for the prescription linked to this record.
 
-const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
+const PrescriptionPanel = ({ record, patientId, onPrescriptionChange, user }) => {
+  const isDoctor = user?.role === "Doctor";
   const prescription = record.prescription;
 
   const [medications, setMedications] = useState([]);
@@ -163,7 +164,7 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
           <p className="text-xs font-semibold uppercase tracking-widest opacity-50">
             Prescription
           </p>
-          {!editingRx && (
+          {!editingRx && isDoctor && (
             <button
               className="btn btn-xs btn-outline"
               onClick={() => { setEditingRx(true); setRxItems([{ medication: "", quantity: "", dosage: "", instructions: "" }]); }}
@@ -231,22 +232,27 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
           <div className="flex gap-2">
             {!editingRx ? (
               <>
+                {isDoctor && (
                 <button
                   className="btn btn-xs btn-outline"
                   onClick={() => setEditingRx(true)}
                 >
                   <PencilIcon className="size-3" /> Edit
                 </button>
-                <button
-                  className="btn btn-xs btn-success btn-outline"
-                  onClick={handleDispense}
-                  disabled={dispensing}
-                >
-                  {dispensing
-                    ? <span className="loading loading-spinner loading-xs" />
-                    : <FlaskConicalIcon className="size-3" />}
-                  Dispense
-                </button>
+                )}
+                {!isDoctor && (
+                  <button
+                    className="btn btn-xs btn-success btn-outline"
+                    onClick={handleDispense}
+                    disabled={dispensing}
+                  >
+                    {dispensing
+                      ? <span className="loading loading-spinner loading-xs" />
+                      : <FlaskConicalIcon className="size-3" />}
+                    Dispense
+                  </button>
+                )}
+                {isDoctor && (
                 <button
                   className="btn btn-xs btn-error btn-outline"
                   onClick={handleDeleteRx}
@@ -254,6 +260,7 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
                 >
                   <TrashIcon className="size-3" />
                 </button>
+                )}
               </>
             ) : (
               <>
@@ -309,7 +316,8 @@ const PrescriptionPanel = ({ record, patientId, onPrescriptionChange }) => {
 
 // ─── Record Detail ────────────────────────────────────────────────────────────
 
-const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
+const RecordDetail = ({ record, patientId, onUpdated, onDeleted, user }) => {
+  const isDoctor = user?.role === "Doctor";
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(null);
   const [allergyInput, setAllergyInput] = useState("");
@@ -441,7 +449,7 @@ const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
         <div className="flex gap-2">
           {!editing ? (
   <>
-    {isEditable && (
+    {isEditable && isDoctor && (
       <>
         <button
           className="btn btn-sm btn-outline"
@@ -549,6 +557,7 @@ const RecordDetail = ({ record, patientId, onUpdated, onDeleted }) => {
             record={record}
             patientId={patientId}
             onPrescriptionChange={onUpdated}
+            user={user}
           />
 
         </div>

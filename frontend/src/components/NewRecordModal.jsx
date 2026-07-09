@@ -10,23 +10,27 @@ const EMPTY_FORM = {
   allergies: [],
 };
 
-const NewRecordModal = ({ patientId, onCreated }) => {
+const NewRecordModal = ({ patientId, onCreated, user  }) => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [allergyInput, setAllergyInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [doctors, setDoctors] = useState([]);
 
   useEffect(() => {
-    const fetchDoctors = async () => {
-      try {
-        const res = await api.get("/users/doctors");
-        setDoctors(res.data);
-      } catch (error) {
-        console.error("Failed to fetch doctors", error);
-      }
-    };
-    fetchDoctors();
-  }, []);
+  const fetchDoctors = async () => {
+    try {
+      const res = await api.get("/users/doctors");
+      setDoctors(res.data);
+
+      // Auto-select the logged-in doctor if they're in the list
+      const match = res.data.find((d) => d._id === user?._id);
+      if (match) setForm((f) => ({ ...f, doctor: match._id }));
+    } catch (error) {
+      console.error("Failed to fetch doctors", error);
+    }
+  };
+  fetchDoctors();
+}, [user?._id]);
 
   const reset = () => {
     setForm(EMPTY_FORM);

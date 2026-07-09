@@ -14,10 +14,11 @@ const toDateInput = (isoDate) =>
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const MedicationDetailPage = () => {
+const MedicationDetailPage = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const isDoctor = user?.role === "Doctor";
   const [medication, setMedication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -123,7 +124,9 @@ const MedicationDetailPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-6 gap-6">
-      <BackButton />
+      <div className="w-full max-w-4xl">
+        <BackButton />
+      </div>
 
       <div className="card bg-base-100 shadow-xl w-full max-w-4xl">
         <div className="card-body">
@@ -143,6 +146,7 @@ const MedicationDetailPage = () => {
                 <span className="badge badge-error badge-outline">Expired</span>
               )}
             </div>
+            {!isDoctor && (
             <div className="flex gap-2">
               {!editing ? (
                 <>
@@ -181,6 +185,7 @@ const MedicationDetailPage = () => {
                 </>
               )}
             </div>
+            )}
           </div>
 
           <div className="divider my-0" />

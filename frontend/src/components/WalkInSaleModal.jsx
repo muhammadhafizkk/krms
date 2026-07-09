@@ -72,7 +72,7 @@ const WalkInSaleModal = ({ user, onSaleCreated }) => {
           medication: i.medication,
           quantity: Number(i.quantity),
         })),
-        processedBy: user.id,
+        processedBy: user._id,
       });
       toast.success("Sale recorded and stock updated");
       onSaleCreated(res.data);

@@ -3,10 +3,11 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 import MedicationsNotFound from "../components/MedicationsNotFound";
 import WalkInSaleModal from "../components/WalkInSaleModal";
-import { ChevronRightIcon, SearchIcon, ShoppingCartIcon } from "lucide-react";
+import { EyeIcon, SearchIcon, ShoppingCartIcon } from "lucide-react";
 import { Link } from "react-router";
 
 const MedicationPage = ({ user }) => {
+  const isDoctor = user?.role === "Doctor";
   const [medications, setMedications] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMedications, setFilteredMedications] = useState([]);
@@ -74,7 +75,8 @@ const MedicationPage = ({ user }) => {
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto p-4 mt-6">
         <div className="flex flex-col gap-4 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h1 className="text-2xl font-bold">Medications</h1>
             <div className="flex items-center gap-3">
               <label className="input input-bordered flex items-center gap-2 w-full md:w-72">
                 <SearchIcon className="size-4 opacity-60" />
@@ -87,21 +89,25 @@ const MedicationPage = ({ user }) => {
                 />
               </label>
 
-              <button
-                className="btn btn-outline btn-secondary whitespace-nowrap"
-                onClick={() =>
-                  document.getElementById("walkin_sale_modal").showModal()
-                }
-              >
-                <ShoppingCartIcon className="size-4" /> Walk-in Sale
-              </button>
+              {!isDoctor && (
+                  <button
+                  className="btn btn-outline btn-secondary whitespace-nowrap"
+                  onClick={() =>
+                    document.getElementById("walkin_sale_modal").showModal()
+                  }
+                >
+                  <ShoppingCartIcon className="size-4" /> Walk-in Sale
+                </button>
+              )}
 
-              <Link
-                to={"/medications/create"}
-                className="btn btn-primary whitespace-nowrap"
-              >
-                + Add Medication
-              </Link>
+              {!isDoctor && (
+                  <Link
+                  to={"/medications/create"}
+                  className="btn btn-primary whitespace-nowrap"
+                >
+                  + Add Medication
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -157,24 +163,12 @@ const MedicationPage = ({ user }) => {
                         </span>
                       </td>
                       <td className="text-right">
-                        <div className="dropdown dropdown-end">
-                          <div tabIndex={0} role="button" className="btn m-1">
-                            <ChevronRightIcon className="size-5" />
-                          </div>
-                          <ul
-                            tabIndex={-1}
-                            className="dropdown-content menu bg-base-100 rounded-box z-1 w-30 p-2 shadow-sm"
-                          >
-                            <li>
-                              <Link
-                                to={`/medications/${medication._id}`}
-                                className="btn btn-ghost"
-                              >
-                                View
-                              </Link>
-                            </li>
-                          </ul>
-                        </div>
+                        <Link
+                          to={`/medications/${medication._id}`}
+                          className="btn btn-sm btn-ghost"
+                        >
+                          <EyeIcon className="size-5" />
+                        </Link>
                       </td>
                     </tr>
                   ))}

@@ -22,6 +22,7 @@ recursively find all .xlsx files inside.
 
 import os
 import re
+import sys
 import argparse
 import pandas as pd
 from datetime import datetime
@@ -302,7 +303,7 @@ def main():
 
     if not os.path.exists(args.folder):
         print(f"Folder not found: {args.folder}")
-        return
+        sys.exit(1)
 
     print(f"Parsing Excel files in: {args.folder}\n")
     records, unmapped = parse_all(args.folder)

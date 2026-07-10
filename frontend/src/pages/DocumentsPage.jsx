@@ -178,7 +178,7 @@ const DocumentsPage = () => {
                         </span>
                       </td>
                       <td>{doc.patient?.fullName || "—"}</td>
-                      <td className="font-mono text-sm">{doc.patient?.icNumber || "—"}</td>
+                      <td className="font-mono text-sm">{doc.patient?.NRIC || "—"}</td>
                       <td className="font-mono text-sm">{doc.serialNumber || "—"}</td>
                       <td>{doc.generatedBy?.fullName || "—"}</td>
                       <td className="text-sm opacity-70">

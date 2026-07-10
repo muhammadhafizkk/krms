@@ -9,6 +9,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from datetime import datetime
 import subprocess
+import threading  # Added for asynchronous background tasks
 
 load_dotenv("../backend/.env")
 
@@ -36,6 +37,60 @@ def load_model():
         bundle.get("has_category", True),
         bundle.get("max_month_num", 12),
     )
+
+def run_retraining_worker(script_dir):
+    """
+    Worker function executed inside a background thread.
+    Handles the long-running subprocess executions and logs results to the server console.
+    """
+    print(f"--- BACKGROUND RETRAINING STARTED AT {datetime.now().isoformat()} ---")
+    try:
+        # Use "python3" as the standard environment executable for Linux/Render environments
+        python_exe = "python3" if os.name != "nt" else "python"
+
+        if os.path.exists(EXCEL_FOLDER):
+            print("Worker: Parsing Excel files...")
+            result_parse = subprocess.run(
+                [python_exe, "parse_excel.py", "--folder", EXCEL_FOLDER],
+                check=True,
+                cwd=script_dir,
+                capture_output=True,
+                text=True,
+                encoding="utf-8"
+            )
+            print(result_parse.stdout)
+        else:
+            print(f"Worker: Excel folder not found at {EXCEL_FOLDER}, generating synthetic data...")
+            result_gen = subprocess.run(
+                [python_exe, "generate_data.py"],
+                check=True,
+                cwd=script_dir,
+                capture_output=True,
+                text=True,
+                encoding="utf-8"
+            )
+            print(result_gen.stdout)
+
+        print("Worker: Training machine learning model...")
+        result_train = subprocess.run(
+            [python_exe, "train_model.py"],
+            check=True,
+            cwd=script_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8"
+        )
+        print(result_train.stdout)
+        print(f"--- BACKGROUND RETRAINING SUCCESSFUL AT {datetime.now().isoformat()} ---")
+
+    except subprocess.CalledProcessError as e:
+        print("--- BACKGROUND RETRAIN SUBPROCESS FAILED ---")
+        print("STDOUT:", e.stdout)
+        print("STDERR:", e.stderr)
+        print("--------------------------------------------")
+    except Exception as ex:
+        print(f"--- BACKGROUND RETRAIN UNEXPECTED ERROR: {str(ex)} ---")
+
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -121,75 +176,31 @@ def predict():
         "predictions": results,
         "generatedAt": datetime.now().isoformat(),
         "totalMedications": len(results),
-        "skippedMedications": skipped,  # surface skipped names so you can debug
+        "skippedMedications": skipped,
     })
 
 @app.route("/retrain", methods=["POST"])
 def retrain():
     """
-    Retrain the model using real Excel data.
-    Runs parse_excel.py (to rebuild real_consumption.csv) then train_model.py.
-    Falls back to synthetic data only if no Excel folder exists.
+    Triggers model retraining asynchronously.
+    Responds immediately to the client to prevent Gunicorn/Render timeouts.
     """
-    try:
-        script_dir = os.path.dirname(__file__)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
-        if os.path.exists(EXCEL_FOLDER):
-            # Parse real Excel files into real_consumption.csv
-            result_parse = subprocess.run(
-                ["python", "parse_excel.py", "--folder", EXCEL_FOLDER],
-                check=True,
-                cwd=script_dir,
-                capture_output=True,
-                text=True,
-                encoding="utf-8"
-            )
+    # Initialize and spin off the worker thread
+    retrain_thread = threading.Thread(
+        target=run_retraining_worker,
+        args=(script_dir,),
+        daemon=True  # Allows thread to close properly if application restarts
+    )
+    retrain_thread.start()
 
-            print(result_parse.stdout)
-        else:
-            # No real data — fall back to synthetic generation
-            print(f"Excel folder not found at {EXCEL_FOLDER}, generating synthetic data")
-            result_gen = subprocess.run(
-                ["python", "generate_data.py"],
-                check=True,
-                cwd=script_dir,
-                capture_output=True,
-                text=True,
-                encoding="utf-8"
-            )
-            print(result_gen.stdout)
-
-        # Train on whichever CSV is available (train_model.py prefers real_consumption.csv)
-        result_train = subprocess.run(
-            ["python", "train_model.py"],
-            check=True,
-            cwd=script_dir,
-            capture_output=True,
-            text=True,
-            encoding="utf-8"
-        )
-        print(result_train.stdout)
-
-        _, le, _, max_month_num = load_model()
-
-        return jsonify({
-            "message": "Model retrained successfully",
-            "retriainedAt": datetime.now().isoformat(),
-            "knownMedications": list(le.classes_) if le else [],
-            "maxMonthNum": max_month_num,
-        })
-    except subprocess.CalledProcessError as e:
-        # ADD THESE LINES TO LOG TO TERMINAL:
-        print("--- RETRAIN SUBPROCESS FAILED ---")
-        print("STDOUT:", e.stdout)
-        print("STDERR:", e.stderr)
-        print("---------------------------------")
-        
-        return jsonify({
-            "error": f"Retraining failed: {str(e)}",
-            "stdout": e.stdout,
-            "stderr": e.stderr,
-        }), 500
+    # Immediately respond to the client with an HTTP 202 (Accepted) code
+    return jsonify({
+        "status": "accepted",
+        "message": "Retraining worker initialized successfully in the background.",
+        "triggeredAt": datetime.now().isoformat()
+    }), 202
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5002))

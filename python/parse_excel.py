@@ -268,7 +268,7 @@ def parse_all(folder):
         all_records.extend(records)
         for k, v in unmapped.items():
             all_unmapped[k] += v
-        print(f"  ✓ {fname}: {len(records)} medication rows")
+        print(f"  [OK] {fname}: {len(records)} medication rows")
 
     return all_records, all_unmapped
 
@@ -315,7 +315,7 @@ def main():
     monthly = aggregate_monthly(records)
 
     monthly.to_csv(args.out, index=False)
-    print(f"\n✓ Saved {len(monthly)} monthly rows to {args.out}")
+    print(f"\n[OK] Saved {len(monthly)} monthly rows to {args.out}")
     print(f"  Medications: {monthly['medication_name'].nunique()}")
     print(f"  Date range: {monthly['year'].min()}-{monthly['month'].min():02d} "
           f"to {monthly['year'].max()}-{monthly['month'].max():02d}")
@@ -324,7 +324,7 @@ def main():
     print(summary.to_string())
 
     if unmapped:
-        print(f"\n⚠ {len(unmapped)} unmapped medication names (add to NAME_MAP if needed):")
+        print(f"\n[WARNING] {len(unmapped)} unmapped medication names (add to NAME_MAP if needed):")
         sorted_unmapped = sorted(unmapped.items(), key=lambda x: -x[1])
         for name, count in sorted_unmapped[:30]:
             print(f"  {count:4d}x  {name}")

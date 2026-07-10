@@ -136,26 +136,39 @@ def retrain():
 
         if os.path.exists(EXCEL_FOLDER):
             # Parse real Excel files into real_consumption.csv
-            subprocess.run(
+            result_parse = subprocess.run(
                 ["python", "parse_excel.py", "--folder", EXCEL_FOLDER],
                 check=True,
-                cwd=script_dir
+                cwd=script_dir,
+                capture_output=True,
+                text=True,
+                encoding="utf-8"
             )
+
+            print(result_parse.stdout)
         else:
             # No real data — fall back to synthetic generation
             print(f"Excel folder not found at {EXCEL_FOLDER}, generating synthetic data")
-            subprocess.run(
+            result_gen = subprocess.run(
                 ["python", "generate_data.py"],
                 check=True,
-                cwd=script_dir
+                cwd=script_dir,
+                capture_output=True,
+                text=True,
+                encoding="utf-8"
             )
+            print(result_gen.stdout)
 
         # Train on whichever CSV is available (train_model.py prefers real_consumption.csv)
-        subprocess.run(
+        result_train = subprocess.run(
             ["python", "train_model.py"],
             check=True,
-            cwd=script_dir
+            cwd=script_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8"
         )
+        print(result_train.stdout)
 
         _, le, _, max_month_num = load_model()
 
@@ -166,7 +179,17 @@ def retrain():
             "maxMonthNum": max_month_num,
         })
     except subprocess.CalledProcessError as e:
-        return jsonify({"error": f"Retraining failed: {str(e)}"}), 500
+        # ADD THESE LINES TO LOG TO TERMINAL:
+        print("--- RETRAIN SUBPROCESS FAILED ---")
+        print("STDOUT:", e.stdout)
+        print("STDERR:", e.stderr)
+        print("---------------------------------")
+        
+        return jsonify({
+            "error": f"Retraining failed: {str(e)}",
+            "stdout": e.stdout,
+            "stderr": e.stderr,
+        }), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5002))

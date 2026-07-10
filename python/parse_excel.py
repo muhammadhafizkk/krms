@@ -306,7 +306,12 @@ def main():
         return
 
     print(f"Parsing Excel files in: {args.folder}\n")
-    records, unmapped = parse_all(args.folder)
+    result = parse_all(args.folder)
+    if not result or len(result) < 2:
+        print("Error: Could not extract data. Ensure dependencies like openpyxl are installed.")
+        sys.exit(1)
+
+    records, unmapped = result
 
     if not records:
         print("\nNo records extracted. Check your folder path and file structure.")
